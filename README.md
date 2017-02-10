@@ -50,7 +50,7 @@ The tool does not rerquire any special installation outside the prerequisites.
 
 # Usage
 
-Usage: ./reparation.pl -b Ribo_samfile -g genome_DNA_fasta_file -sdir scripts_directory -db Curated_bacterial_protein_sequences
+Usage: ./reparation.pl -b Ribo_samfile -g genome_fasta_file -sdir scripts_directory -db curated_protein_fasta
 
 The tool requires 4 mandatory input varaibles. A complete list of optional varibles are within the reparation.pl script.
 
