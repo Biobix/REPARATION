@@ -15,7 +15,7 @@ The REPARATION workflow consist of:
 4) Start Site selection.
 
 
-# REQUIREMENTS
+# Requirements
 The REPARATION software is primarily written in perl, python2.7 and R. For each dataset the complete REPARATION workflow (from the sam files to final results) took under 45 minutes.
 It is also dependant on a set of tool binaries which should all be installed on your system before the pipeline can execute all of its commands.
 
@@ -45,14 +45,15 @@ It is also dependant on a set of tool binaries which should all be installed on 
 	The tool binary paths should be included in the $PATH variable or within the script/bin folder of the tool.
 
 	
-# INSTALL
-The tool 
+# Install
+The tool does not rerquire any special installation outside the prerequisites. 
 
-# USAGE
+# Usage
 
-Important: the Ribo-seq must be aligned to the same genome to be analyzed!
+Usage: ./reparation.pl -b Ribo_samfile -g genome_DNA_fasta_file -sdir scripts_directory -db Curated_bacterial_protein_sequences
 
-The tool requires 4 mandatory input varaibles. A complete list of optional varibles are within the reparation.pl script
+The tool requires 4 mandatory input varaibles. A complete list of optional varibles are within the reparation.pl script.
 
-Usage: ./reparation.pl -b <Ribo_samfile> -g <genome fasta file> -sdir <scripts directory> -db <fasta file of curated protein sequences>
+NB: the Ribo-seq must be aligned to the same genome to be analyzed!
+
 
