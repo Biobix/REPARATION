@@ -46,7 +46,7 @@ my $blastdb;							# protein blast database in fasta format
 my $script_dir = "scripts";				# Directory where the script files are stored (defaults to the current directory)
 
 # Input variables
-my $threads = 4;						# 
+my $threads = 4;						# # number of threads used by the USEARCH tool
 my $workdir;							# working directory to store files (defaults to current directoy)
 my $experiment;							# Experiment name
 my $gtf;								# Genome annotation file [if avialable]
