@@ -1094,8 +1094,9 @@ sub predicted_ORFs_pep {
 			my ($aa_seq,$dna_seq) = translate($start,$stop,$strand,$region,$ORF);
 			$ORFs->{$gene}->{$ORF}->{aa_seq} = $aa_seq;
 
-			print F ">generic|$ORF|start codon:$start_codon strand:$strand length:$length\n$dna_seq\n";
-			#print F ">generic|$ORF|start codon:$start_codon strand:$strand length:$length\n$aa_seq\n";
+			$aa_seq =~ s/^./M/;
+			#print F ">generic|$ORF|start codon:$start_codon strand:$strand length:$length\n$dna_seq\n";
+			print F ">generic|$ORF|start codon:$start_codon strand:$strand length:$length\n$aa_seq\n";
 		}
 	}
 	close F;
