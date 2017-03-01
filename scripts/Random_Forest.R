@@ -120,10 +120,8 @@ trainset.rf <- rbind(positive,negative)
 trainset.rf$class <- as.factor(trainset.rf$class)
 
 if (sd == 'N') {
-	#feat <- c("class","start_coverage","start_rpkm","coverage","stop_rpkm","rpkm","accu_prop")
 	feat <- c("class","start_coverage","start_rpkm","coverage","stop_rpkm","accu_prop")
 } else {
-	#feat <- c("class","start_coverage","start_rpkm","coverage","stop_rpkm","rpkm","accu_prop","SD_score")
 	feat <- c("class","start_coverage","start_rpkm","coverage","stop_rpkm","accu_prop","SD_score") 
 }
 

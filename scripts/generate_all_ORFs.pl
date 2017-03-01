@@ -155,8 +155,6 @@ sub write_ORFs_to_file {
 		my $start_count	= $ORFs->{$ORF}->{start_count};
 		my $gene 		= $ORFs->{$ORF}->{gene};
 
-		#next if ($start_count <= 0);	# skip all ORFs with 0 RPF count withn start region
-
 		# calculate RBS energy
 		my ($SD_seq,$SD_score,$SD_pos) = calculate_RBS($ORF,$strand);
 		my ($accumu_prop,$average_start, $average_rest) = Accumulation_proportion($start,$stop,$strand,$region,$count);

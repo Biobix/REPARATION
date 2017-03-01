@@ -178,7 +178,6 @@ sub ORF_classification {
 				my $ORF_anno = (keys %{$annotated->{$gene}})[0];
 
 				if (exists $annotated->{$gene}->{$ORF_anno} and $annotated->{$gene}->{$ORF_anno}->{biotype} eq 'protein_coding') {
-					# check variants
 					my $start_anno  = $annotated->{$gene}->{$ORF_anno}->{start}; 
 					my $stop_anno   = $annotated->{$gene}->{$ORF_anno}->{stop};
 
@@ -1095,7 +1094,6 @@ sub predicted_ORFs_pep {
 			$ORFs->{$gene}->{$ORF}->{aa_seq} = $aa_seq;
 
 			$aa_seq =~ s/^./M/;
-			#print F ">generic|$ORF|start codon:$start_codon strand:$strand length:$length\n$dna_seq\n";
 			print F ">generic|$ORF|start codon:$start_codon strand:$strand length:$length\n$aa_seq\n";
 		}
 	}
