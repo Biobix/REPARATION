@@ -188,6 +188,12 @@ if ($pgm == 1) {
 	}
 }
 
+# print input variables
+if ($identity <= 0 or $identity > 1) {
+	print "-id can only take a value greater than zero and less than or equal to 1\n";
+	exit;
+}
+
 # Generate occupancy file
 print "Generating ribosome occupancy file..\n";
 my $bedgraphS = $work_dir.$experiment."Ribo-seq_Sense_".$occupancy."prime";
@@ -314,5 +320,4 @@ sub timer {
 	printf("\nTotal running time: %02d:%02d:%02d\n\n", int($runTime / 3600), int(($runTime  % 3600) / 60), int($runTime % 60));
 
 }
-
 
