@@ -841,17 +841,17 @@ sub internal_out_of_frame {
 
 			if ($strand1 eq $strand2 and $region1 eq $region2) {	# consider only ORFs on same strand and region
 				if ($start1 < $start2 and $stop2 < $stop1) {
-					my ($ORF_score2,$average_start2, $average_rest2) = Accumulation_proportion($start2,$stop2,$strand2,$region2);
-					if ($average_start2 <= $OF_FOLD*$average_rest2 or $ORF_score2 <= 1) {
+					#my ($ORF_score2,$average_start2, $average_rest2) = Accumulation_proportion($start2,$stop2,$strand2,$region2);
+					#if ($average_start2 <= $OF_FOLD*$average_rest2 or $ORF_score2 <= 1) {
 						$ORFs_to_delete->{$ORF2} = 1;
-					} else {
+					#} else {
 						# ensure start of out-of-frame does not lie within start if longer ORF
-						if ($strand1 eq '+') {
-							if ($start2 - $start1 <= $REGION and $ORFs->{$gene1}->{$ORF1}->{ribo_rpkm} > $ORFs->{$gene2}->{$ORF2}->{ribo_rpkm}) {$ORFs_to_delete->{$ORF2} = 1;}
-						} else {
-							if ($stop1 - $stop2 <= $REGION and $ORFs->{$gene1}->{$ORF1}->{ribo_rpkm} > $ORFs->{$gene2}->{$ORF2}->{ribo_rpkm}) {$ORFs_to_delete->{$ORF2} = 1;}
-						}
-					}
+					#	if ($strand1 eq '+') {
+					#		if ($start2 - $start1 <= $REGION and $ORFs->{$gene1}->{$ORF1}->{ribo_rpkm} > $ORFs->{$gene2}->{$ORF2}->{ribo_rpkm}) {$ORFs_to_delete->{$ORF2} = 1;}
+					#	} else {
+					#		if ($stop1 - $stop2 <= $REGION and $ORFs->{$gene1}->{$ORF1}->{ribo_rpkm} > $ORFs->{$gene2}->{$ORF2}->{ribo_rpkm}) {$ORFs_to_delete->{$ORF2} = 1;}
+					#	}
+					#}
 					$count++;
 				}
 			}
