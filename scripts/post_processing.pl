@@ -117,7 +117,7 @@ if ($gtf_file) {
 				$count_Extension++;
 			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Intergenic') {
 				$count_Intergenic++;
-			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Out-of-frame') {
+			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq '3\' truncation') {
 				$count_Internal++;
 			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Reverse') {
 				$count_Reverse++;
@@ -133,7 +133,7 @@ if ($gtf_file) {
 	print "Number of truncations ORFs $count_Truncation\n";
 	print "Number of Extension ORFs $count_Extension\n";
 	print "Number of Intergenic ORFs $count_Intergenic\n";
-	print "Number of Out-of-frame ORFs $count_Internal\n";
+	print "Number of 3\' truncation ORFs $count_Internal\n";
 	print "Number of Reverse ORFs $count_Reverse\n";
 	print "Number of ncRNA ORFs $count_ncRNA\n";
 
@@ -208,11 +208,11 @@ sub ORF_classification {
 			foreach my $gene_anno (sort keys %$annotated) {
 
 				my $ORF_anno 	= (sort keys %{$annotated->{$gene_anno}})[0];
-				my $strand_anno = $annotated->{$gene_anno}->{$ORF_anno}->{strand};
-				my $region_anno = $annotated->{$gene_anno}->{$ORF_anno}->{region};
-				my $start_anno  = $annotated->{$gene_anno}->{$ORF_anno}->{start}; 
-				my $stop_anno   = $annotated->{$gene_anno}->{$ORF_anno}->{stop};
-				my $biotype		= $annotated->{$gene_anno}->{$ORF_anno}->{biotype};
+				my $strand_anno= $annotated->{$gene_anno}->{$ORF_anno}->{strand};
+				my $region_anno= $annotated->{$gene_anno}->{$ORF_anno}->{region};
+				my $start_anno = $annotated->{$gene_anno}->{$ORF_anno}->{start}; 
+				my $stop_anno  = $annotated->{$gene_anno}->{$ORF_anno}->{stop};
+				my $biotype	= $annotated->{$gene_anno}->{$ORF_anno}->{biotype};
 				my $name		= $annotated->{$gene_anno}->{$ORF_anno}->{name};
 
 				next if ($region ne $region_anno);
@@ -225,7 +225,7 @@ sub ORF_classification {
 				} elsif ($start_anno <= $start and $stop <= $stop_anno and $biotype eq 'protein_coding') {
 					if ($strand eq $strand_anno) {
 						if ($start_anno == $start or $stop == $stop_anno ) {
-							$ORFs->{$gene}->{$ORF}->{orf_type} = "Internal";
+							$ORFs->{$gene}->{$ORF}->{orf_type} = "3\' truncation";
 							$ORFs->{$gene}->{$ORF}->{ref_anno} = $name;
 							$ORFs->{$gene}->{$ORF}->{dist_aTIS} = 'NA';
 							last;
@@ -286,9 +286,6 @@ sub ORFs_start_selection {
 			$reverse_strand->{$region}->{$start} = $gene;
 		}
 	}
-
-	print "forwand genes ", scalar(keys %{$forward_strand->{'Chromosome'}}),"\n";
-	print "reverse genes ", scalar(keys %{$reverse_strand->{'Chromosome'}}),"\n";
 
 	# process forward strand
 	foreach my $region (sort keys %$forward_strand) {
@@ -1284,5 +1281,4 @@ sub revdnacomp {
     $revcomp =~ tr/ACGTacgt/TGCAtgca/;
     return $revcomp;
 }
-
 
