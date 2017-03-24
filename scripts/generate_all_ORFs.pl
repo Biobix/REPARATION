@@ -436,7 +436,7 @@ sub create_positive_file {
 		my @line = split '\t', $_;
 		my $query_id = $line[0];
 		my $target_id = $line[1];
-		my $perc_ident = $line[2];
+		my $perc_ident = $line[2]/100;
 
 		if ($perc_ident >= $identity) {
 			$query_id =~ s/\s+//g;
