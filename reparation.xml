@@ -1,0 +1,104 @@
+<tool id="reparation" name="REPARATION" version="0.1.0">
+    <requirements>
+    </requirements>
+    <stdio>
+        <exit_code range="1:" />
+	</stdio>
+	<command interpreter='perl'>
+		reparation.pl 
+		--g $genome
+		--gtf $gtf
+		--a $Ribo_alignment
+		<!-- sdir $scripts-->
+		--en $experimentname
+		--p $occupancy
+		--mn $min_read_len
+		--mx $max_read_len
+		--db $blastdb
+		--mo $MINORF
+		--mr $MINREAD
+		--ost $OFFSET_START
+		--osp $OFFSET_STOP
+	
+		<!-- Shine dalgarno sequence -->
+		--sd $choose_sd.sd_usage
+		--osd $choose_sd.OFFSET_SD
+		--seed $choose_sd.SEED
+
+		--id $identity
+		--ev $evalue
+		--pg $pgm
+		<!-- pset $positive_set -->
+		--cdn $start_codons
+		--ncdn $start_codon_nset
+		--pcdn $start_codon_pset
+
+		<!-- output files -->
+		--bgS $bedgraphS
+		--bgAS $bedgraphAS
+		--orf $predicted_ORFs
+		--bed $predicted_ORFs_bed
+		--fa $predicted_ORFs_fasta
+
+	</command>
+
+	<inputs>
+
+		<param name="scripts" value="scripts/" type="text" hidden='true' />
+
+		<param type="data" name="genome" format="fasta" label="Genome fasta file" help="Fasta file of the bacterial genome"/>
+		<param type="data" name="gtf" format="gtf" label="Annotation file" help="Annotation " />
+		<param type="data" name="Ribo_alignment" format="sam" label="Alignment file (sam)" help=""/>
+		<param name="experimentname" size="20" type="text" label="enter the experiment name" />
+		<param type="data" name="blastdb" format="fasta" label="Fasta file of curated bacteria protein sequence" help=""/>
+
+		<param name="occupancy" type="select" label="Determin P-site offset" multiple="false">
+			<option value="3" selected="true">3'</option>
+			<option value="5">5'</option>
+			<option value="1">plastid</option>
+		</param>
+
+		<param name="min_read_len" size="3" value="22" type="integer" label="Minimum RPF read length"/>
+		<param name="max_read_len" size="3" value="40" type="integer" label="Maximum RPF read length"/>
+		<param name="MINORF" size="10" value="90" type="integer" label="Minimum ORF length" />
+		<param name="MINREAD" size="10" value="90" type="integer" label="Minimum RPF read counts per open reading frame" />
+		<param name="OFFSET_START" size="10" value="45" type="integer" label="Start region length" />
+		<param name="OFFSET_STOP" size="10" value="21" type="integer" label="Stop region length" />
+
+		<param name="start_codons" size="30" value="ATG,GTG,TTG" type="text" label="Start codons for open reading frame prediction" />
+		<param name="start_codon_pset" size="24" value="ATG,GTG,TTG" type="text" label="Start codons for the positive set" />
+		<param name="start_codon_nset" size="24" value="CTG" type="text" label="Start codons for the negative set" />
+
+		<!-- Positive set generation -->
+		<param name="pgm" type="select" label="Tool for initial positive set" multiple="false">
+			<option value="1" selected="true">prodigal</option>
+			<option value="2">glimmer3</option>
+		</param>
+
+		<param name="identity" value="0.75" type="float" label="Identity threshold for BLAST search" help=""/>
+		<param name="evalue" value="0.00001" type="float" label="E-value threshold for BLAST search" help=""/>
+
+		<!-- Shine dalgarno sequence -->
+        <conditional name="choose_sd">
+            <param name="sd_usage" type="select" label="Allow the use of Shine Dalgarno sequence in the analysis" multiple="false">
+                <option value="1" selected="true">Yes</option>
+                <option value="0">No</option>
+            </param>
+            <when value="1">
+				<param name="OFFSET_SD" size="2" value="5" type="integer" label="Distance of Shine dalgarno sequence start from ORF start" />
+				<param name="SEED" size="12" value="GGAGG" type="text" label="Shine Dalgarno seed sequence" />
+            </when>
+        </conditional>
+    </inputs>
+
+    <outputs>
+		<data format="bedGraph" name="bedgraphS" label="RIBOseq footprint count data (s)" />
+        <data format="bedGraph" name="bedgraphAS" label="RIBOseq footprint count data (as)" />
+
+        <data format="txt" name="predicted_ORFs" label="Predicted ORFs (list)" />
+        <data format="fasta" name="predicted_ORFs_fasta" label="Predicted ORFs (protein sequences)" />
+        <data format="bed" name="predicted_ORFs_bed" label="Predicted ORFs (bed file)" />
+    </outputs>
+    <help>
+	</help>
+</tool>
