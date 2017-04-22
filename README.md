@@ -57,13 +57,10 @@ The tool does not rerquire any special installation outside the prerequisites.
 1) Add tool definition files in the galaxy tools directory
 2) add tool section in the tool_conf.xml file
 	```xml
-	&lt;section name="REPARATION" id="reparation"&gt;
-		&lt;tool file="REPARATION/reparation.xml" /&gt;
-	&lt;/section&gt;
+	<section name="REPARATION" id="reparation">
+		<tool file="REPARATION/reparation.xml" />
+	</section>
 	```
-3)
-
-
 # Usage
 
 Usage: ./reparation.pl -b Ribo_samfile -g genome_fasta_file -sdir scripts_directory -db curated_protein_db_fasta
