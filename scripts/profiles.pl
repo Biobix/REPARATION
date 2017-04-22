@@ -26,7 +26,8 @@ use warnings;
 
 my ($positive_set,$occupancyFile,$MINREAD,$work_dir,$script_dir) = @ARGV;
 
-my $UPSTREAM = 20;
+my $MINCOV = 0.1;
+my $UPSTREAM = 10;
 my $DOWNSTREAM = 300;
 
 # read RPF into meory
@@ -39,7 +40,7 @@ my $start_file = $work_dir."tmp/start_profile.txt";
 my $stop_file = $work_dir."tmp/stop_profile.txt";
 
 my $tr_count = profile_data($ORFs,$RPF,$start_file,$stop_file);
-system("Rscript ".$script_dir."plot_profile.R $start_file $stop_file $work_dir $tr_count");
+system("Rscript ".$script_dir."/plot_profile.R $start_file $stop_file $work_dir $tr_count");
 
 
 
@@ -67,16 +68,21 @@ sub profile_data {
 		my $stop = $ORFs->{$tr}->{stop};
 
 		my $read_count = 0;
+        my $coverage = 0;
 		for (my $p = $start; $p <= $stop; $p++) {
 			if ($RPF->{$region}->{$strand}->{$p}) {
 				$read_count += $RPF->{$region}->{$strand}->{$p};
+                $coverage++;
 			} 
 		}
 
 		my $length = $stop-$start+1;
+		#next if ($read_count < $MINREAD);
+        next if (($coverage/$length) < $MINCOV);
+
 		my $DOWNSTREAM_tmp = $DOWNSTREAM;
 		if ($length < $DOWNSTREAM) {$DOWNSTREAM_tmp = $length}
-		next if ($read_count < $MINREAD);
+
 
 		$tr_count++;
 

@@ -29,7 +29,7 @@ use Getopt::Long;
 use POSIX;
 
 # Get command line arguments
-my ($genome,$blastdb,$occupancyFile,$positive_set,$ORF_file,$MINORF,$OFFSET_START,$OFFSET_STOP,$OFFSET,$SEED,$identity,$evalue,$codons,$pcodons,$pgm,$work_dir,$script_dir, $threads) = @ARGV;
+my ($genome,$blastdb,$occupancyFile,$positive_set,$ORF_file,$MINORF,$OFFSET_START,$OFFSET_STOP,$OFFSET,$SEED,$identity,$evalue,$codons,$pcodons,$pgm,$work_dir,$script_dir, $threads, $read_count_file) = @ARGV;
 
 
 #----------------------------------------------------
@@ -78,7 +78,6 @@ foreach my $codon(@pcodons) {
 	$positive_codons->{$codon} = 1;
 }
 
-
 # read genome fasta file
 my $genomes = read_fasta($genome);
 
@@ -90,25 +89,7 @@ my $max_length = 1;
 my $ORFs = find_all_ORFs($genomes);
 
 # generate positive set 
-my $ORF_positive = {};
-if ($pgm == 1) { 
-	# postive set generated with prodigal
-	print "\tGenerating the set of positive examples using Prodigal...\n";
-	my $positive_fasta = generate_prodigal_ORFs($ORFs);
-	$ORF_positive = create_positive_file($ORFs,$positive_set,$positive_fasta);
-	print "\tSet of Positive examples created.\n";
-
-} elsif ($pgm == 2) { 
-	# postive set generated with Glimmer
-	print "\tGenerating the set of positive examples using glimmer...\n";
-	my $positive_fasta = generate_glimmer_ORFs($ORFs,$positive_set);
-	$ORF_positive = create_positive_file($ORFs,$positive_set,$positive_fasta);
-	print "\tSet of Positive examples created.\n";
-
-} elsif ($pgm == 3) {
-	$ORF_positive = get_positive_set($positive_set);
-}
-
+my $ORF_positive = get_positive_set($positive_set);
 
 # Calculate RBS energy
 my $WINDOW 		= 20 - $OFFSET;		# the window size to look RBS for
@@ -387,7 +368,7 @@ sub get_read_table {
 		}
 	}
 	
-	return $read,$mapped_total;
+	return $read, $mapped_total;
 }
 
 
@@ -406,54 +387,8 @@ sub read_fasta {
 }
 
 
-#-------------- Generate Positive Set -------------#
+#-------------- Positive Set -------------#
 
-sub create_positive_file {
-
-	my $ORFs = $_[0];
-	my $positive_set = $_[1];
-	my $positive_fasta = $_[2];
-
-	my $ORF_positive = {};
-
-	my $blast_rpt = $work_dir."tmp/positive_set.bls";
-	my $search = `which usearch 2>&1`;
-	chomp($search);
-	if ($search =~ /^which: no/) {
-		system($script_dir."/bin/usearch -ublast $positive_fasta -db $blastdb -id $identity -evalue $evalue -maxhits 1 -blast6out $blast_rpt -threads $threads");
-	} else {
-		system("usearch -ublast $positive_fasta -db $blastdb -id $identity -evalue $evalue -maxhits 1 -blast6out $blast_rpt");
-	}
-
-	# parse output
-	open (OUT, ">".$positive_set) or die "Error creating file $positive_set\n";
-	print OUT "orf_id\tstrand\n";
-	open (F, $blast_rpt) or die  "Error reading file: $blast_rpt\n";
-	while (<F>) {
-		next if (/^Query_id/);
-		chomp $_;
-
-		my @line = split '\t', $_;
-		my $query_id = $line[0];
-		my $target_id = $line[1];
-		my $perc_ident = $line[2]/100;
-
-		if ($perc_ident >= $identity) {
-			$query_id =~ s/\s+//g;
-
-			if (exists $ORFs->{$query_id}) {	# ensure only valid ORFs are in positive set
-				# allow only valid start codons
-				if (exists $positive_codons->{$ORFs->{$query_id}->{start_codon}}) {
-					print OUT "$query_id\t$ORFs->{$query_id}->{strand}\n";
-					$ORF_positive->{$query_id} = $ORFs->{$query_id}->{strand};
-				}
-			}
-		}
-	}
-	close OUT;
-
-	return $ORF_positive;
-}
 
 sub get_positive_set {
 
@@ -474,93 +409,6 @@ sub get_positive_set {
 	return $ORF_positive;
 }
 
-
-
-# prodigal positive
-sub generate_prodigal_ORFs {
-
-	my $ORFs = $_[0];
-
-	my $positive_gff = $work_dir.'tmp/positive_set.gff';
-
-	my $search = `which prodigal 2>&1`;
-	chomp($search);
-	if ($search =~ /^which: no/) {
-		system($script_dir."/bin/prodigal -i $genome -f gff -o $positive_gff -q");
-	} else {
-		system("prodigal -i $genome -f gff -o $positive_gff -q");
-	}
-
-	my $positive_fasta = $work_dir.'tmp/positive_set.fasta';
-	open (OUT, ">".$positive_fasta) or die "error creating file $positive_fasta\n";
-	open (IN, $positive_gff) or die "Error reading file: $positive_gff\n";
-	while (<IN>) {
-
-		next if (/^#/);
-		chomp $_;
-		my @line = split '\t', $_;
-		my $region = $line[0];
-		my $strand = $line[6];
-
-		my $start = ($strand eq '+') ? $line[3]: $line[3] + 3;
-		my $stop = ($strand eq '+') ? $line[4] - 3: $line[4];
-		my $orf = $region.":".$start."-".$stop;
-		
-		unless (exists $ORFs->{$orf}) {next}
-		print OUT ">$orf\n$ORFs->{$orf}->{aa_seq}\n";
-	}
-	close IN;
-	close OUT;
-
-	return $positive_fasta;
-}
-
-
-# generate using glimmer
-sub generate_glimmer_ORFs {
-
-	my $ORFs = $_[0];
-
-	# Run glimmer
-	my $search = `which glimmer3 2>&1`;
-	chomp($search);
-
-	my $glimmer_icm = $work_dir."tmp/glimmer.icm";
-	my $positive_predict = $work_dir."tmp/positive_set";
-	my $start_cdns = lc($pcodons);
-
-	if ($search =~ /^which: no/) {
-		system($script_dir."bin/glimmer/bin/build-icm $glimmer_icm< $genome");
-		system($script_dir."bin/glimmer/glimmer3 $genome glimmer.icm $positive_predict -A $start_cdns");
-	} else {
-		system("bin/glimmer/bin/build-icm $glimmer_icm< $genome");
-		system("glimmer3 $genome glimmer.icm $positive_predict -A $start_cdns");
-	}
-
-	my $positive_fasta = $work_dir."tmp/positive_set.fasta";
-	open (OUT, ">".$positive_fasta) or die "error creating file $positive_fasta\n";
-	open (IN, $positive_predict.".predict") or die  "Error reading file: ".$positive_predict.".predict\n";
-	my $region = "";
-	while (<IN>) {
-		chomp $_;
-		if (/^>/) {
-			($region) = $_ =~ /^>(.*) dna:/;
-		} else {
-			my @line = split '\s+', $_;
-			my $strand = (split '', $line[3])[0];
-
-			my $start = ($strand eq '+') ? $line[1]: $line[2] + 3;
-			my $stop = ($strand eq '+') ? $line[2] - 3: $line[1];
-			my $orf = $region.":".$start."-".$stop;
-
-			print OUT ">$orf\n$ORFs->{$orf}->{aa_seq}\n";
-		}
-	}
-	close OUT;
-	close IN;
-
-	return $positive_fasta;
-}
 
 
 #-------------- Calculate RBS energy -------------#

@@ -33,7 +33,7 @@ use POSIX;
 #############################################################################
 
 
-my ($RF_prediction,$genome,$occupancyFile,$output_prefix,$threshold,$OFFSET_START,$MINCOUNT, $gtf_file) = @ARGV;
+my ($RF_prediction,$genome,$occupancyFile,$output_prefix,$threshold,$OFFSET_START,$MINCOUNT, $gtf_file, $predicted_ORFs, $predicted_ORFs_bed, $predicted_ORFs_fasta) = @ARGV;
 
 my $WINDOW = 21;	# Window to calculate kurtosis
 my $REGION = 30;	# Region to account for any mapping errors we assume the aprox. length of a ribosome.
@@ -84,9 +84,7 @@ $ORFs_processed = internal_out_of_frame($ORFs_processed);
 $ORFs_processed = two_way_overlap($ORFs_processed);
 $ORFs_processed = one_way_overlap($ORFs_processed);
 
-
-if ($gtf_file) {
-# check if gtf is a file
+if ($gtf_file) {	# check if gtf is a file
 
 	my $annotated = annotation($gtf_file);
 	my $Classified_ORFs = ORF_classification($ORFs_processed, $annotated);
@@ -104,6 +102,7 @@ if ($gtf_file) {
 	my $count_Extension = 0;
 	my $count_Reverse = 0;
 	my $count_3_codon = 0;
+	my $count_out_of_frame = 0;
 
 	foreach my $gene (keys %$Classified_ORFs) {
 		foreach my $ORF (keys %{$Classified_ORFs->{$gene}}) {
@@ -112,16 +111,18 @@ if ($gtf_file) {
 			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Truncation') {
 				if (abs($Classified_ORFs->{$gene}->{$ORF}->{dist_aTIS}) <= 3 ) {$count_3_codon++}
 				$count_Truncation++;
-			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Extension') {
+			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq "5' extension") {
 				if (abs($Classified_ORFs->{$gene}->{$ORF}->{dist_aTIS}) <= 3) {$count_3_codon++}
 				$count_Extension++;
 			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Intergenic') {
 				$count_Intergenic++;
-			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq '3\' truncation') {
+			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Internal') {
 				$count_Internal++;
-			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Reverse') {
+			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Opposite strand') {
 				$count_Reverse++;
-			} else {
+			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Out-of-frame') {
+				$count_out_of_frame++;
+			}else {
 				$count_ncRNA++;
 			}		
 		}
@@ -131,10 +132,11 @@ if ($gtf_file) {
 	print "number of close proximity variants $count_3_codon\n";
 	print "Number of annotated ORFs $count_Annotated\n";
 	print "Number of truncations ORFs $count_Truncation\n";
-	print "Number of Extension ORFs $count_Extension\n";
+	print "Number of 5' extension ORFs $count_Extension\n";
 	print "Number of Intergenic ORFs $count_Intergenic\n";
-	print "Number of 3\' truncation ORFs $count_Internal\n";
+	print "Number of 3' truncation $count_Internal\n";
 	print "Number of Reverse ORFs $count_Reverse\n";
+	#print "Number of Out-of-frame ORFs $count_out_of_frame\n";
 	print "Number of ncRNA ORFs $count_ncRNA\n";
 
 } else {
@@ -188,7 +190,7 @@ sub ORF_classification {
 					$ORFs->{$gene}->{$ORF}->{ref_anno} = $annotated->{$gene}->{$ORF_anno}->{name};
 
 					if ($dist < 0) {
-						$ORFs->{$gene}->{$ORF}->{orf_type} = 'Extension';
+						$ORFs->{$gene}->{$ORF}->{orf_type} = "5' extension";
 					} elsif ($dist > 0) {
 						$ORFs->{$gene}->{$ORF}->{orf_type} = 'Truncation';
 					} elsif ($dist == 0) {
@@ -200,19 +202,17 @@ sub ORF_classification {
 					$ORFs->{$gene}->{$ORF}->{orf_type} = $annotated->{$gene}->{$ORF_anno}->{biotype};
 					$ORFs->{$gene}->{$ORF}->{ref_anno} = $annotated->{$gene}->{$ORF_anno}->{name};
 					$ORFs->{$gene}->{$ORF}->{dist_aTIS} = 'NA';
-				} else {
-					print "Bizare case \n";
-				}
+				} 
 			} 
 		} else {
 			foreach my $gene_anno (sort keys %$annotated) {
 
 				my $ORF_anno 	= (sort keys %{$annotated->{$gene_anno}})[0];
-				my $strand_anno= $annotated->{$gene_anno}->{$ORF_anno}->{strand};
-				my $region_anno= $annotated->{$gene_anno}->{$ORF_anno}->{region};
-				my $start_anno = $annotated->{$gene_anno}->{$ORF_anno}->{start}; 
-				my $stop_anno  = $annotated->{$gene_anno}->{$ORF_anno}->{stop};
-				my $biotype	= $annotated->{$gene_anno}->{$ORF_anno}->{biotype};
+				my $strand_anno = $annotated->{$gene_anno}->{$ORF_anno}->{strand};
+				my $region_anno = $annotated->{$gene_anno}->{$ORF_anno}->{region};
+				my $start_anno  = $annotated->{$gene_anno}->{$ORF_anno}->{start}; 
+				my $stop_anno   = $annotated->{$gene_anno}->{$ORF_anno}->{stop};
+				my $biotype		= $annotated->{$gene_anno}->{$ORF_anno}->{biotype};
 				my $name		= $annotated->{$gene_anno}->{$ORF_anno}->{name};
 
 				next if ($region ne $region_anno);
@@ -225,7 +225,7 @@ sub ORF_classification {
 				} elsif ($start_anno <= $start and $stop <= $stop_anno and $biotype eq 'protein_coding') {
 					if ($strand eq $strand_anno) {
 						if ($start_anno == $start or $stop == $stop_anno ) {
-							$ORFs->{$gene}->{$ORF}->{orf_type} = "3\' truncation";
+							$ORFs->{$gene}->{$ORF}->{orf_type} = "3' truncation";
 							$ORFs->{$gene}->{$ORF}->{ref_anno} = $name;
 							$ORFs->{$gene}->{$ORF}->{dist_aTIS} = 'NA';
 							last;
@@ -236,7 +236,7 @@ sub ORF_classification {
 							last;
 						}
 					} else {
-						$ORFs->{$gene}->{$ORF}->{orf_type} = "Reverse";
+						$ORFs->{$gene}->{$ORF}->{orf_type} = "Opposite strand";
 						$ORFs->{$gene}->{$ORF}->{ref_anno} = $name;
 						$ORFs->{$gene}->{$ORF}->{dist_aTIS} = 'NA';
 						last;
@@ -477,7 +477,8 @@ sub check_overlap_and_kurtosis {
 		my $WINDOW_UP = $WINDOW;
 		my $start_k = ($strand eq '+') ? $pos - $WINDOW_UP: $pos - $WINDOW;
 		my $stop_k = ($strand eq '+') ? $pos + $WINDOW: $pos + $WINDOW_UP;
-		for (my $t = $start_k; $t <= $stop_k + $WINDOW; $t=$t++) {
+		#for (my $t = $start_k; $t <= $stop_k + $WINDOW; $t=$t + 1) {
+		for (my $t = $start_k; $t <= $stop_k + $WINDOW; $t=$t + 3) {
 			if (defined $reads_table->{$region}->{$strand}->{$t}) {
 				push @points, $reads_table->{$region}->{$strand}->{$t};
 				$count_k += $reads_table->{$region}->{$strand}->{$t};
@@ -841,17 +842,7 @@ sub internal_out_of_frame {
 
 			if ($strand1 eq $strand2 and $region1 eq $region2) {	# consider only ORFs on same strand and region
 				if ($start1 < $start2 and $stop2 < $stop1) {
-					#my ($ORF_score2,$average_start2, $average_rest2) = Accumulation_proportion($start2,$stop2,$strand2,$region2);
-					#if ($average_start2 <= $OF_FOLD*$average_rest2 or $ORF_score2 <= 1) {
-						$ORFs_to_delete->{$ORF2} = 1;
-					#} else {
-						# ensure start of out-of-frame does not lie within start if longer ORF
-					#	if ($strand1 eq '+') {
-					#		if ($start2 - $start1 <= $REGION and $ORFs->{$gene1}->{$ORF1}->{ribo_rpkm} > $ORFs->{$gene2}->{$ORF2}->{ribo_rpkm}) {$ORFs_to_delete->{$ORF2} = 1;}
-					#	} else {
-					#		if ($stop1 - $stop2 <= $REGION and $ORFs->{$gene1}->{$ORF1}->{ribo_rpkm} > $ORFs->{$gene2}->{$ORF2}->{ribo_rpkm}) {$ORFs_to_delete->{$ORF2} = 1;}
-					#	}
-					#}
+					$ORFs_to_delete->{$ORF2} = 1;
 					$count++;
 				}
 			}
@@ -931,8 +922,7 @@ sub output_ORFs_classified {
 	my $ORFs = $_[0];
 	my $prefix = $_[1];
 
-	my $file = $prefix.".txt";
-	open (F, ">".$file) or die  "Error creating file: $file";
+	open (F, ">".$predicted_ORFs) or die  "Error creating file: $predicted_ORFs\n";
 	print F "ORF_locus\tstrand\tlength\tstart_codon\tribo_count\tribo_rpkm\tribo_coverage\tSD_score\tSD_pos\tprob\tORF_type\tReference\tDistance_from_aTIS\n";
 	foreach my $gene (sort keys %$ORFs) {
 		foreach my $ORF (sort keys %{$ORFs->{$gene}}) {
@@ -961,8 +951,7 @@ sub output_ORFs {
 	my $ORFs = $_[0];
 	my $prefix = $_[1];
 
-	my $file = $prefix.".txt";
-	open (F, ">".$file) or die  "Error creating file: $file";
+	open (F, ">".$predicted_ORFs) or die  "Error creating file: $predicted_ORFs\n";
 	print F "ORF_locus\tstrand\tlength\tstart_codon\tribo_count\tribo_rpkm\tribo_coverage\tSD_score\tSD_pos\tprob\n";
 	foreach my $gene (sort keys %$ORFs) {
 		foreach my $ORF (sort keys %{$ORFs->{$gene}}) {
@@ -989,10 +978,9 @@ sub create_bed {
 	my $ORFs = $_[0];
 	my $name = $_[1];
 
-	my $file = $name.".bed";
 	my ($a,$b) = $name =~ /(.*)\/(.*)/;
 
-	open (F, ">".$file) or die  "Error creating file: $file";
+	open (F, ">".$predicted_ORFs_bed) or die  "Error creating file: $predicted_ORFs_bed\n";
 	print F "track type=bed name=\"$b\" description=\"\" visibility=1 color=\"7,7,255\" priority=20\n";
 	foreach my $gene (sort keys %$ORFs) {
 		my $ORF = (keys %{$ORFs->{$gene}})[0];
@@ -1024,10 +1012,9 @@ sub create_bed_classified {
 	my $ORFs = $_[0];
 	my $name = $_[1];
 
-	my $file = $name.".bed";
 	my ($a,$b) = $name =~ /(.*)\/(.*)/;
 
-	open (F, ">".$file) or die  "Error creating file: $file";
+	open (F, ">".$predicted_ORFs_bed) or die  "Error creating file: $predicted_ORFs_bed\n";
 	print F "track type=bed name=\"$b\" description=\"\" visibility=1 color=\"\" priority=20\n";
 	foreach my $gene (sort keys %$ORFs) {
 
@@ -1076,8 +1063,7 @@ sub predicted_ORFs_pep {
 	my $ORFs = $_[0];
 	my $name = $_[1];
 
-	my $file = $name.".fasta";
-	open (F, ">".$file) or die  "Error creating file: $file";
+	open (F, ">".$predicted_ORFs_fasta) or die  "Error creating file: $predicted_ORFs_fasta\n";
 	foreach my $gene (sort keys %$ORFs) {
 		foreach my $ORF (sort keys %{$ORFs->{$gene}}) {
 			my $strand = $ORFs->{$gene}->{$ORF}->{strand};
@@ -1095,7 +1081,6 @@ sub predicted_ORFs_pep {
 		}
 	}
 	close F;
-
 }
 
 
@@ -1281,4 +1266,5 @@ sub revdnacomp {
     $revcomp =~ tr/ACGTacgt/TGCAtgca/;
     return $revcomp;
 }
+
 
