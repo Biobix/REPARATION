@@ -27,6 +27,10 @@ It is also dependant on a set of tool binaries which should all be installed on 
 		- BioPerl
 		- POSIX
 		
+	Python packages:
+	--------------
+		- plastid
+		
 	R packages:
 	--------------
 		- ggplot2
@@ -48,12 +52,20 @@ It is also dependant on a set of tool binaries which should all be installed on 
 # Install
 The tool does not rerquire any special installation outside the prerequisites. 
 
+# Galaxy Installation
+
+1) Add tool definition files in the galaxy tools directory
+2) add tool section in the tool_conf.xml file
+	<section name="REPARATION" id="reparation">
+		<tool file="REPARATION/reparation.xml" />
+	</section>
+3)
+
+
 # Usage
 
 Usage: ./reparation.pl -b Ribo_samfile -g genome_fasta_file -sdir scripts_directory -db curated_protein_db_fasta
 
 The tool requires 4 mandatory input varaibles. A complete list of optional varibles are within the reparation.pl script.
 
-NB: the Ribo-seq must be aligned to the same genome to be analyzed!
-
-
+NB: The ribosome profiling data should be aligned onto the same genome used for the analyzed!
