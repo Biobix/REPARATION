@@ -234,6 +234,7 @@ sub find_all_ORFs {
 					my $codon = uc(substr($sequenceEntry, $i, 3));
 					last if (length($codon) < 3);
 					my $aa = $translationHash{$codon};
+					if (undef $aa) {last}
 					if ($aa eq "*") {
 						$stop = $i;
 						last;
