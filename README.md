@@ -43,6 +43,7 @@ It is also dependant on a set of tool binaries which should all be installed on 
 		- prodigal[*] https://github.com/hyattpd/Prodigal
 		- USEARCH[*] (http://www.drive5.com/usearch/download.html)
 		- R (http://www.r-project.org/)
+		- samtools
 		
 		[*] The usearchX.Y.Z and prodigalX.Y.Z executatble should be renamed to "usearch" and "prodigal" respectively.
 	
@@ -63,7 +64,7 @@ The tool does not rerquire any special installation outside the prerequisites.
 	```
 # Usage
 
-Usage: ./reparation.pl -b Ribo_samfile -g genome_fasta_file -sdir scripts_directory -db curated_protein_db_fasta
+Usage: ./reparation.pl -b Ribo_samfile -g genome_fasta_file -sdir scripts_directory -db curated_protein_db(fasta)
 
 The tool requires 4 mandatory input varaibles. A complete list of optional varibles are within the reparation.pl script.
 
