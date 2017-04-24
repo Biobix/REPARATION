@@ -9,7 +9,6 @@
 		--g $genome
 		--gtf $gtf
 		--a $Ribo_alignment
-		<!-- sdir $scripts-->
 		--en $experimentname
 		--p $occupancy
 		--mn $min_read_len
@@ -39,6 +38,7 @@
 		--orf $predicted_ORFs
 		--bed $predicted_ORFs_bed
 		--fa $predicted_ORFs_fasta
+        --ps $psite_offset
 
 	</command>
 
@@ -92,12 +92,16 @@
     </inputs>
 
     <outputs>
-		<data format="bedGraph" name="bedgraphS" label="RIBOseq footprint count data (s)" />
-        <data format="bedGraph" name="bedgraphAS" label="RIBOseq footprint count data (as)" />
+		<data format="bedGraph" name="bedgraphS" label="RIBOseq footprint count data (sense)" />
+        <data format="bedGraph" name="bedgraphAS" label="RIBOseq footprint count data (anti sense)" />
 
         <data format="txt" name="predicted_ORFs" label="Predicted ORFs (list)" />
         <data format="fasta" name="predicted_ORFs_fasta" label="Predicted ORFs (protein sequences)" />
         <data format="bed" name="predicted_ORFs_bed" label="Predicted ORFs (bed file)" />
+
+        <data format="png" name="psite_offset" label="plastid estimated p-site offsets">
+            <filter>choose_sd['occupancy'] == '1'</filter>
+        </data>
     </outputs>
     <help>
 	</help>
