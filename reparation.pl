@@ -42,36 +42,33 @@ use File::Basename;
 #----------------------------------------------------
 
 # Mandatory variables
-my $genome;								# Prokaryotic genome file in fasta format
-my $sam_file;						# Ribosome profiling alignment file [sam formate]
-my $blastdb;							# protein blast database in fasta format
-
-my $dirname = dirname(__FILE__);		# get tool directory for default script directory
+my $genome;				# Prokaryotic genome file in fasta format
+my $sam_file;				# Ribosome profiling alignment file [sam formate]
+my $blastdb;				# protein blast database in fasta format
+my $dirname = dirname(__FILE__);	# get tool directory for default script directory
 my $script_dir = $dirname."/scripts";	# Directory where the script files are stored (defaults to the current directory)
 
 # Input variables
-my $threads = 4;						# # number of threads used by the USEARCH tool
-my $workdir;							# working directory to store files (defaults to current directoy)
-my $experiment;							# Experiment name
-my $gtf;								# Genome annotation file [if avialable]
-my $positive_set;						# Tab delimited file of positive examples (format [orf_id	strand], orf_id=region:start-stop) 
-my $occupancy = 3;						# p site for the reads (3 = 3 prime end of read  and 5 = 5 prime end of read)
-my $min_read_len = 22;					# Minimum RPF read length
-my $max_read_len = 40;					# Maximum RPF read length
-my $MINORF = 30;						# Minimum ORF length
-my $MINREAD = 3;						# Only ORFs with at least this number of RPF reads within the start regions
-my $OFFSET_START= 45;					# Offset at the start of the ORF
-my $OFFSET_STOP	= 21;					# Offset at stop of the ORF
-my $OFFSET_SD = 5;						# distance uptream of start codon to start search for SD sequence and position
-my $SEED = "GGAGG";						# The seed shine dalgano sequence
-my $USESD = 1;							# Flag to determine if RBS energy is included in the predictions [1= use RBS, 0=do not use RBS]
-my $identity = 0.75;					# identity threshold for comparative psotive set selection
-my $evalue = 1e-5;						# e value threshold for comparative psotive set selection
-my $pgm = 1;							# Program to generate positive set prodigal=1, glimmer=2, provided_by_user=3
-my $start_codons = "ATG,GTG,TTG";		# Comma seperated list of possible start codons
-my $start_codon_nset = "CTG";			# Start codon for the negative set
+my $threads = 4;			# number of threads used by the USEARCH tool
+my $workdir;				# working directory to store files (defaults to current directoy)
+my $experiment;				# Experiment name
+my $gtf;				# Genome annotation file (gtf) [if avialable]
+my $occupancy = 1;			# p-site of on reads (1 = plastid estimated p-site (default), 3 = 3 prime end of read  and 5 = 5 prime end of read)
+my $min_read_len = 22;			# Minimum RPF read length
+my $max_read_len = 40;			# Maximum RPF read length
+my $MINORF = 30;			# Minimum ORF length
+my $MINREAD = 3;			# Only ORFs with at least this number of RPF reads within the start regions
+my $OFFSET_START= 45;			# Offset at the start of the ORF
+my $OFFSET_STOP	= 21;			# Offset at stop of the ORF
+my $OFFSET_SD = 5;			# distance uptream of start codon to start search for SD sequence and position
+my $SEED = "GGAGG";			# The seed shine dalgano sequence
+my $USESD = 1;				# Flag to determine if RBS energy is included in the predictions [1= use RBS, 0=do not use RBS]
+my $identity = 0.75;			# identity threshold for comparative psotive set selection
+my $evalue = 1e-5;			# e value threshold for comparative psotive set selection
+my $pgm = 1;				# Program to generate positive set prodigal=1, glimmer=2, provided_by_user=3
+my $start_codons = "ATG,GTG,TTG";	# Comma seperated list of possible start codons
+my $start_codon_nset = "CTG";		# Start codon for the negative set
 my $start_codon_pset = "ATG,GTG,TTG";	# Start codon for the positive set. Defualts to start codons set
-
 
 # Output files
 my $bedgraphS;
@@ -79,10 +76,9 @@ my $bedgraphAS;
 my $predicted_ORFs;
 my $predicted_ORFs_bed;
 my $predicted_ORFs_fasta;
+my $plastid_image;
 
-
-# track processing time
-my $startRun = time();
+my $startRun = time();	# track processing time
 
 # Get command line arguments
 GetOptions(
@@ -106,7 +102,6 @@ GetOptions(
 	'id=f'=>\$identity,
 	'ev=f'=>\$evalue,
 	'pg=i'=>\$pgm,
-	#'pset=s'=>\$positive_set,
 	'cdn=s'=>\$start_codons,
 	'ncdn=s'=>\$start_codon_nset,
 	'pcdn=s'=>\$start_codon_pset,
@@ -114,26 +109,81 @@ GetOptions(
 	'bgAS=s'=>\$bedgraphAS,
 	'orf=s'=>\$predicted_ORFs,
 	'bed=s'=>\$predicted_ORFs_bed,
-	'fa=s'=>\$predicted_ORFs_fasta
+	'fa=s'=>\$predicted_ORFs_fasta,
+	'ps=s'=>\$plastid_image
 );
 
 
-
-# ensure start codons are uppercase
-$start_codons = uc($start_codons);
-$start_codon_nset = uc($start_codon_nset);
-unless($start_codon_pset) {$start_codon_pset = $start_codons}
-
 $experiment = ($experiment) ? $experiment."_": "";
 
-# read sam/bam file
-# generate bed graph file and use it as occupancy 
-# sort bam file samtools sort aln.bam aln.sorted
-# genomeCoverageBed -bg -$occupancy -ibam $bam_file -strand - 
+$start_codons = uc($start_codons);	# convert to uppercase
+$start_codon_nset = uc($start_codon_nset); # convert to uppercase
+$start_codon_pset = uc($start_codon_pset);
+
+my %translationHash = 
+	(GCA => "A", GCG => "A", GCT => "A", GCC => "A",
+     TGC => "C", TGT => "C",
+     GAT => "D", GAC => "D",
+     GAA => "E", GAG => "E",
+     TTT => "F", TTC => "F",
+     GGA => "G", GGG => "G", GGC => "G", GGT => "G",
+     CAT => "H", CAC => "H",
+     ATA => "I", ATT => "I", ATC => "I",
+     AAA => "K", AAG => "K",
+     CTA => "L", CTG => "L", CTT => "L", CTC => "L", TTA => "L", TTG => "L",
+     ATG => "M",
+     AAT => "N", AAC => "N",
+     CCA => "P", CCT => "P", CCG => "P", CCC => "P",
+     CAA => "Q", CAG => "Q",
+     CGA => "R", CGG => "R", CGC => "R", CGT => "R",
+     AGA => "R", AGG => "R",
+     TCA => "S", TCG => "S", TCC => "S", TCT => "S",
+     AGC => "S", AGT => "S",
+     ACA => "T", ACG => "T", ACC => "T", ACT => "T",
+     GTA => "V", GTG => "V", GTC => "V", GTT => "V",
+     TGG => "W",
+     TAT => "Y", TAC => "Y");
+
+
+# Check start codons input
+my $start_cdn = {};
+my @scodons = split /,/, $start_codons;
+foreach my $codon(@scodons) {
+    if (length($codon) != 3 or !(exists $translationHash{$codon})) {
+        print "Codon '$codon' not a valid start codon\n";
+	    print "Start codons must be 3 nucleotides long and contain either of A,C,G or T [example: -cdn ATG,GTG,TTG]\n";
+        exit(1);
+    }
+
+	$start_cdn->{$codon} = 1;
+}
+
+# Check start codons for positive set
+my $positive_codons = {};
+my @pcodons = split /,/, $start_codon_pset;
+foreach my $codon(@pcodons) {
+    if (length($codon) != 3 or !(exists $translationHash{$codon})) {
+        print "Codon '$codon' not a valid start codon for the positive set\n";
+	    print "Codons must be 3 nucleotides long and contain either of A,C,G or T [example: -pcdn ATG,GTG,TTG]\n";
+        exit(1);
+    }
+	$positive_codons->{$codon} = 1;
+}
+
+# Check start codons for negative set
+my $negative_codons = {};
+my @ncodons = split /,/, $start_codon_pset;
+foreach my $codon(@ncodons) {
+    if (length($codon) != 3 or !(exists $translationHash{$codon})) {
+        print "Codon '$codon' not a valid start codon for the negative set\n";
+	    print "Codons must be 3 nucleotides long and contain either of A,C,G or T [example: -ncdn ATG,GTG,TTG]\n";
+        exit(1);
+    }
+	$negative_codons->{$codon} = 1;
+}
 
 # check if script directoryis properly initialized and contains all scripts
 if ($script_dir) {
-	#$script_dir = (substr($script_dir, -1) eq '/') ? $script_dir: $script_dir."/"; # check and add forward slash
 	unless (-e $script_dir."/positive_set.pl") {
 		print "Script 'positive_set.pl' not found in script directory.\nEnsure the directory  '$script_dir' contains all required file (see readme).\n";
 		exit(1);
@@ -184,33 +234,17 @@ if ($script_dir) {
 my ($work_dir, $tmp_dir) = check_working_dir($workdir);
 
 
-
 # append work_dir to output files
 unless($bedgraphS) {$bedgraphS = $work_dir.$experiment."Ribo-seq_Sense_".$occupancy.".bedgraph";}
 unless($bedgraphAS) {$bedgraphAS = $work_dir.$experiment."Ribo-seq_AntiSense_".$occupancy.".bedgraph";}
 unless($predicted_ORFs) {$predicted_ORFs= $work_dir.$experiment."Predicted_ORFs.txt";}
 unless($predicted_ORFs_bed) {$predicted_ORFs_bed = $work_dir.$experiment."Predicted_ORFs.bed";}
 unless($predicted_ORFs_fasta) {$predicted_ORFs_fasta = $work_dir.$experiment."Predicted_ORFs.fasta";}
+unless($plastid_image) {$plastid_image = $work_dir.$experiment."p_site_offset.fasta";}
 
-# Check prerequisits
-if ($pgm == 1 or $pgm == 2) {
-	$positive_set = $work_dir."positive_set.txt";
-
-} elsif ($pgm == 3) {
-	if ($positive_set) {
-		if (-e $positive_set) {
-			system("mv $positive_set ".$work_dir."positive_set.txt");
-		} else {
-			print "Positive '".$positive_set."'set is not a file.\nPlease provide a file of positive examples.\n";
-			exit(1);
-		}
-	} else {
-		print "Positive set not defined. If flag pg = 3 then provide an appropriate file for flag pset\n";
-		exit(1);
-	}
-}
 
 # generate positive set
+my $positive_set = $work_dir."positive_set.txt";
 print "Generate positive set...\n";
 my $positive_set_gtf = $work_dir.'tmp/positive.gtf';
 my $cmd_positive = "perl ".$script_dir."/positive_set.pl $genome $blastdb $positive_set $min_read_len $max_read_len $MINORF $identity $evalue $start_codon_pset $pgm $work_dir $script_dir $threads";
@@ -219,8 +253,24 @@ system($cmd_positive);
 print "Done.\n\n";
 
 # section to implement plastid
-my $psite_offset_file = "";
+my $psite_offset_file = $work_dir.$experiment."p_offsets.txt";
 if ($occupancy == 1) {
+	# check if plastid is installed
+	my $search_psite = `which psite 2>&1`;
+	chomp($search_psite);
+	if ($search_psite =~ /^which: no/) {
+		print "Could not locate ' psite '. Please ensure the plastid python package is installed.\n";
+		exit(1);
+	}
+		
+	my $search_metagene = `which metagene 2>&1`;
+	chomp($search_metagene);
+	if ($search_metagene =~ /^which: no/) {
+		print "Could not locate ' metagene '. Please ensure the plastid python package is installed.\n";
+		exit(1);
+	}
+	
+	# find p-site offsets
     $psite_offset_file = generate_p_site($positive_set_gtf,$sam_file,$min_read_len,$max_read_len);
 }
 
@@ -234,7 +284,6 @@ my $cmd_occupancy = "python ".$script_dir."/Ribo_seq_occupancy.py $sam_file $occ
 print "$cmd_occupancy\n";
 system($cmd_occupancy);
 print "Done.\n\n";
-
 
 # Generate all possible ORFs
 print "Generate all possible ORFs...\n";
@@ -286,7 +335,6 @@ sub generate_p_site {
     my $min_l = $_[2];
     my $max_l =$_[3];
 
-
     my $run_name = $work_dir."tmp/plastid";
 
     # convert sam to bam and index
@@ -308,17 +356,17 @@ sub generate_p_site {
     print "Calculate psite\n".$command_psite."\n\n";
     system($command_psite);
 
-    system("mv ".$run_name."_p_offsets.txt ".$work_dir.$experiment."p_offsets.txt");
-    system("mv ".$run_name."_p_offsets.png ".$work_dir.$experiment."p_offsets.png");
+    system("mv ".$run_name."_p_offsets.txt ".$work_dir.$experiment."p_site_offsets.txt");
+    system("mv ".$run_name."_p_offsets.png ".$plastid_image );
 
     return $work_dir.$experiment."p_offsets.txt";
 }
-
 
 sub check_if_pgm_exist {
 
 	my $pgm = $_[0];
 
+	# check for prodigal or glimmer
 	my $search = `which $pgm 2>&1`;
 	chomp($search);
 	if ($search =~ /^which: no/) {
@@ -333,14 +381,13 @@ sub check_if_pgm_exist {
 				exit(1);
 			}
 		}
-	} 
+	}
 }
 
 sub uninitialized_param {
 	my ($v) = @_;
 	not ( defined($v) and length $v );
 }
-
 
 sub check_working_dir {
 
@@ -377,16 +424,9 @@ sub check_working_dir {
 	return $work_dir, $tmp_dir;
 }
 
-
 sub timer {
-
 	my $startRun = shift;
-
 	my $endRun 	= time();
 	my $runTime = $endRun - $startRun;
-
 	printf("\nTotal running time: %02d:%02d:%02d\n\n", int($runTime / 3600), int(($runTime  % 3600) / 60), int($runTime % 60));
-
 }
-
-
