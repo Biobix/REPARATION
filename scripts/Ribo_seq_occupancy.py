@@ -185,7 +185,6 @@ def process_ribo(inputFile,occupancy,min_read_len,max_read_len,outputFileS,outpu
 
                 count_reads += 1
                 if int(min_read_len) <= length <= int(max_read_len):
-
                     if occupancy == 3:
                         ribo_position = end3
                     elif occupancy == 5:
@@ -212,9 +211,6 @@ def process_ribo(inputFile,occupancy,min_read_len,max_read_len,outputFileS,outpu
                 count_unmapped += 1
 
         line = inFile.readline()
-
-    for i in flags:
-        print str(i) + " = " + str(flags[i])
 
     print "Total number of mappable reads " + str(count_reads)
     print "Total number of unmapped reads " + str(count_unmapped)
@@ -260,9 +256,8 @@ if __name__=='__main__':
     occupancyFile = str(sys.argv[7])	# RPF occupancy file
     prefix_S = str(sys.argv[8])			# prefix sense bedgraph file
     prefix_AS = str(sys.argv[9])	    # prefix antisense bedgraph file
-    inFile_offset = str(sys.argv[10])	# prefix antisense bedgraph file
+    inFile_offset = str(sys.argv[10])	# plastid estimated offset files
 
-    print " start ribo processing "
     process_ribo(inputFile,occupancy,min_read_len,max_read_len,outputFileS,outputFileAS,occupancyFile,prefix_S,prefix_AS,inFile_offset)
 
 
