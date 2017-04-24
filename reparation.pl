@@ -240,7 +240,7 @@ unless($bedgraphAS) {$bedgraphAS = $work_dir.$experiment."Ribo-seq_AntiSense_".$
 unless($predicted_ORFs) {$predicted_ORFs= $work_dir.$experiment."Predicted_ORFs.txt";}
 unless($predicted_ORFs_bed) {$predicted_ORFs_bed = $work_dir.$experiment."Predicted_ORFs.bed";}
 unless($predicted_ORFs_fasta) {$predicted_ORFs_fasta = $work_dir.$experiment."Predicted_ORFs.fasta";}
-unless($plastid_image) {$plastid_image = $work_dir.$experiment."p_site_offset.fasta";}
+unless($plastid_image) {$plastid_image = $work_dir.$experiment."p_site_offset.png";}
 
 
 # generate positive set
