@@ -141,13 +141,11 @@ sub write_ORFs_to_file {
 		my ($accumu_prop,$average_start, $average_rest) = Accumulation_proportion($start,$stop,$strand,$region,$count);
 
 		print F "$ORF\t$gene\t$strand\t$length\t$start_codon\t$count\t$rpkm\t$coverage\t$start_cov\t$start_rpkm\t$stop_rpkm\t$accumu_prop\t$SD_score\t$SD_pos\n";
-
 		$count_orf++;
 	}
 	close F;
 
 	print "\tTotal number of ORFs generated $count_orf.\n";
-
 }
 
 
@@ -189,7 +187,6 @@ sub Accumulation_proportion {
 		return $average_start/$average_rest, $average_start, $average_rest;
 	}
 }
-
 
 sub find_all_ORFs {
 	
@@ -234,7 +231,7 @@ sub find_all_ORFs {
 					my $codon = uc(substr($sequenceEntry, $i, 3));
 					last if (length($codon) < 3);
 					my $aa = $translationHash{$codon};
-					if (undef $aa) {last}
+					if (!(exists $translationHash{$codon})) {last}
 					if ($aa eq "*") {
 						$stop = $i;
 						last;
@@ -257,7 +254,6 @@ sub find_all_ORFs {
 						}
 
 						my ($count,$coverage,$rpkm) = RIBO_info($region, $strand, $new_start, $new_stop,1);
-
 						my $tmp_OFFSET_START = $OFFSET_START;
 						my $tmp_OFFSET_STOP = $OFFSET_STOP;
 						if ($length < $OFFSET_START + $OFFSET_STOP) {
@@ -305,8 +301,6 @@ sub find_all_ORFs {
 	return $ORFs;
 }
 
-
-
 sub RIBO_info {
 	# Function to read RIBO-seq positional data into memory
 	my $chr 	  = $_[0];
@@ -337,7 +331,6 @@ sub RIBO_info {
 		my $length = $stop - $start + 1;
 		$coverage 	= $coverage/$length;
 		$rpkm = (($count/$orf_count)*1000000000)/($length*$mapped_total);
-
 		return $count,$coverage,$rpkm;
 	}
 }
@@ -348,7 +341,6 @@ sub revdnacomp {
     $revcomp =~ tr/ACGTacgt/TGCAtgca/;
     return $revcomp;
 }
-
 
 sub get_read_table {
 	my $file = $_[0];
@@ -368,7 +360,6 @@ sub get_read_table {
 			$read->{$region}->{$strand}->{$start} = $line[3];
 		}
 	}
-	
 	return $read, $mapped_total;
 }
 
@@ -390,12 +381,10 @@ sub read_fasta {
 
 #-------------- Positive Set -------------#
 
-
 sub get_positive_set {
 
 	my $positive_set = $_[0];
 	my $ORF_positive = {};
-
 	open (my $F, $positive_set) or die  "Error reading file: $positive_set\n";
 	while (<$F>) {
 		next if (/^orf_id/);
@@ -426,14 +415,12 @@ sub calculate_RBS {
 	my $SD_region =  ($strand eq '+') ? get_SD_region($start, $strand, $region): get_SD_region($stop, $strand, $region);
 
 	my ($SD_seq, $SD_score, $SD_pos);
-
 	if (defined $SD_region and length($SD_region) >= $SEEDLENGTH) {
 		($SD_seq, $SD_score, $SD_pos) = calculate_SD_score($SD_region);
 		$SD_pos = ($strand eq '+') ? $start - $SD_pos - $OFFSET: $stop + $OFFSET + $SD_pos;
 	} else {
 		($SD_seq, $SD_score, $SD_pos) = ("-",-100000000,'NA');
 	}
-
 	return $SD_seq,$SD_score,$SD_pos;
 }
 
@@ -463,10 +450,8 @@ sub calculate_SD_score {
 			}
 		}
 	}
-
 	return $max_SD_seq, $max_SD_score, $max_SD_pos;
 }
-
 
 sub SD_kmer_score {
 	my $seq = $_[0];
@@ -481,18 +466,14 @@ sub SD_kmer_score {
 			$scorei = $scorei*$SD_markov_score->{$i}->{$nucl[$i]};
 		}
 	}
-
 	return($Max_loc_score->{$pos} + $scorei);
-
 }
-
 
 sub Train_SD_Markov_Model {
 
 	my $positive_ORFs = $_[0];
 
 	my @sequences = get_training_sequences($positive_ORFs);
-
 	my $Max_loc_score 	= {};
 	my $SD_markov_score = {};
 	my @training_seq;
@@ -507,7 +488,6 @@ sub Train_SD_Markov_Model {
 
 			my $kmer_seq = $kmers->{$p};
 			my $sim_score = simple_similarity($kmer_seq);
-
 			if ($MAX_score < $sim_score) {
 				$MAX_loc 	 = $p;
 				$MAX_score 	 = $sim_score;
@@ -521,7 +501,6 @@ sub Train_SD_Markov_Model {
 			$Max_loc_score->{$MAX_loc}++;	# get frequencies of each location in the training set
 		}
 	}
-
 	# Calculate frequency for each nucleotide
 	foreach (@training_seq) {
 		my @SD_seq = split '',$_;
@@ -531,7 +510,6 @@ sub Train_SD_Markov_Model {
 	}
 
 	my $N = scalar(@training_seq);
-
 	#---- LOGARITHMIC SCORING ---------------------
 	for( my $i=0; $i < $SEEDLENGTH; $i++) {
 		$SD_markov_score->{$i}->{'A'} = log(($SD_markov_score->{$i}->{'A'}+0.000001)/$N);
@@ -539,25 +517,21 @@ sub Train_SD_Markov_Model {
 		$SD_markov_score->{$i}->{'G'} = log(($SD_markov_score->{$i}->{'G'}+0.000001)/$N);
 		$SD_markov_score->{$i}->{'T'} = log(($SD_markov_score->{$i}->{'T'}+0.000001)/$N);
 	}
-
 	# Score the locations within the DS_region
 	for( my $i=0; $i < $WINDOW; $i++) {
 		unless ($Max_loc_score->{$i}) {$Max_loc_score->{$i}=0}
 		$Max_loc_score->{$i} = log(($Max_loc_score->{$i}+0.0001)/$N);
 	}
-
     # determine minimum markov score for threshold
     my $min_score = 100000000;
     my $max_score = -100000000000;
     my $skip_val=log(0.000001/$N);
 	foreach my $p (keys %$SD_markov_score) {
 		foreach my $nucl (keys %{$SD_markov_score->{$p}}) {
-			
 			next if ($SD_markov_score->{$p}->{$nucl} <= $skip_val); # skip if default score i.e not observed in training set
 			if ($SD_markov_score->{$p}->{$nucl} > $max_score) { # maximum score
 				$max_score = $SD_markov_score->{$p}->{$nucl};
 			}
-			
 			if ($SD_markov_score->{$p}->{$nucl} < $min_score) { # minimun score
 				$min_score = $SD_markov_score->{$p}->{$nucl};
 			}
@@ -573,7 +547,6 @@ sub Train_SD_Markov_Model {
 		if ($Max_loc_score->{$p} > $max_loc_posib) { # maximum score
 			$max_loc_posib = $Max_loc_score->{$p};
 		}
-			
 		if ($Max_loc_score->{$p} < $min_loc_posib) { # minimun score
 			$min_loc_posib = $Max_loc_score->{$p};
 		}		
@@ -587,7 +560,6 @@ sub Train_SD_Markov_Model {
 
 	return $SD_markov_score, $Max_loc_score, $markov_score_threshold, $perfect_markov_score, $initial_threshold;
 }
-
 
 sub get_training_sequences {
 	# collect all SD region from coordinates in the training set;
@@ -615,10 +587,8 @@ sub get_training_sequences {
 			push @training_seq, $context;
 		}
 	}
-
 	return @training_seq;
 }
-
 
 sub simple_similarity {
 
@@ -627,7 +597,6 @@ sub simple_similarity {
 	# the score is weighted based on the number of hydrogen bonds
 
 	my $seq = $_[0];
-
 	my $score = 0;
 	for (my $i = 0; $i < length($seq); $i++) {
 		if (substr($SEED, $i,1) eq substr($seq, $i,1)) {
@@ -644,25 +613,20 @@ sub simple_similarity {
 			}
 		}
 	}
-
 	return $score;
 }
-
 
 sub kmers {
 	# get all kmers in the SD region
     my $seq = $_[0];
-
     my $kmers;
     for (my $i = length($seq); $i >= $SEEDLENGTH; $i--) {
 		last if ($i - $SEEDLENGTH < 0);
 		my $pos = $WINDOW - $i;				# position closest to ORF start
         $kmers->{$pos} = substr($seq, $i-$SEEDLENGTH, $SEEDLENGTH);
     }
-
     return $kmers;
 }
-
 
 sub get_SD_region {
 
@@ -675,14 +639,12 @@ sub get_SD_region {
 	if ($strand eq "+") {
 		my $seq = $genomes->{$region};
 		my $start_offset = $start - $OFFSET - $WINDOW;
-
 		my $WINDOW_tmp = $WINDOW;
 		if ($start_offset < 0) {
 			$WINDOW_tmp = $WINDOW_tmp + $start_offset;	# adjust the length for the overhang
 			$start_offset = 0;
 		}
 		if ($WINDOW_tmp > 0) { $context = substr($seq, $start_offset, $WINDOW_tmp);}
-
 	} elsif ($strand eq "-") {
 		my $seq = $genomes->{$region};
 		my $start_offset = $start + $OFFSET;
@@ -693,11 +655,5 @@ sub get_SD_region {
 		}
 		if ($WINDOW_tmp > 0) {$context = revdnacomp(substr($seq, $start_offset, $WINDOW_tmp));}
 	}
-
 	return $context;
-
 }
-
-
-
-
