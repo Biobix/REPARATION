@@ -188,7 +188,7 @@ sub get_read_table {
 		if ( $_ =~ /^mappable/) {
 			$mapped_total = (split ':', $_)[1];
 		} else {
-			my @line = split '\t', $_;
+			my @line = split ',|\t', $_;
 			my $region 	= $line[0];
 			my $start 	= $line[1];
 			my $strand 	= $line[2];
