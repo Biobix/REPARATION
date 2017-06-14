@@ -476,15 +476,16 @@ sub SD_kmer_score {
 	my @nucl = split '', $seq;
 	my $scorei;
 	for(my $i=0; $i < scalar(@nucl); $i++) {
-		unless (defined $scorei) {
-			$scorei = $SD_markov_score->{$i}->{$nucl[$i]};
+		if ($scorei) {
+			if ($SD_markov_score->{$i}->{$nucl[$i]}) {
+                		$scorei = $scorei*$SD_markov_score->{$i}->{$nucl[$i]};
+            		}
 		} else {
-			$scorei = $scorei*$SD_markov_score->{$i}->{$nucl[$i]};
-		}
+			$scorei = $SD_markov_score->{$i}->{$nucl[$i]};
+            	}
 	}
 
 	return($Max_loc_score->{$pos} + $scorei);
-
 }
 
 
