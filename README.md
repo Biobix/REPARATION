@@ -15,8 +15,6 @@ The REPARATION workflow consist of:
 4) Start Site selection.
 
 
-NB: The ribosome profiling data should be aligned onto the same genome used for the analyzed!
-
 # Requirements
 The REPARATION software is primarily written in perl, python2.7 and R. For each dataset the complete REPARATION workflow (from the sam files to final results) took under 45 minutes.
 It is also dependant on a set of tool binaries which should all be installed on your system before the pipeline can execute all of its commands.
@@ -73,7 +71,7 @@ Usage: ./reparation.pl -sam riboseq_alignment_files_sam_format -g genome_fasta_f
 Mandatory input variables
 
 	-sam:   Ribosome alignment file (sam)
-	-g:     Genome fasta file
+	-g:     Genome fasta file. This should be the same genome fasta file used in the alignment of the Ribo-seq reads.
 	-sdir:  The "scripts" directory (avialable within the REPARATION directory), defaults to directory of reparation.pl script
 	-db:    fasta database of curated bacteria protein sequences
 
