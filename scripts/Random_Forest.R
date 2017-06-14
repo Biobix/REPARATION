@@ -1,5 +1,5 @@
 #####################################
-##	REPARARTION: Ribosome Profiling Assisted (Re-) Annotation of Bacterial genomes
+##	REPARARTION: Ribosome Profiling Assisted (Re-) Annotation of Bacterial proteome
 ##
 ##	Copyright (C) 2017 Elvis Ndah
 ##
@@ -32,6 +32,7 @@ run_randomforest <- function(train,pos,neg){
 suppressMessages(library(ggplot2))
 suppressMessages(library(randomForest))
 suppressMessages(library(ROCR))
+suppressMessages(library(PRROC))
 suppressMessages(library(SiZer))
 
 # Input varibles
@@ -41,7 +42,8 @@ Positive_set <- as.character(args[2])
 work_dir <- as.character(args[3])
 codons <- as.character(args[4])
 ncodon <- as.character(args[5])
-sd <- as.numeric(args[6])
+sd <- as.character(args[6])
+cutoff <- as.numeric(args[7])
 
 # split string to get start codons
 valid_start = strsplit(codons, ",")[[1]]
@@ -51,7 +53,6 @@ ncodons = strsplit(ncodon, ",")[[1]]
 ORFs <- read.table(file=ORFs_file, sep="\t", h=T)
 ORFs <- ORFs[which(ORFs$start_rpkm > 0),]
 ORFs$log_rpkm <- log(ORFs$rpkm)
-cat("Total number of ORFs ",dim(ORFs)[1],"\n", sep=" ")
 
 # Positive Set
 prodigal <- read.table(file=Positive_set, sep="\t", h=T)
@@ -120,12 +121,11 @@ trainset.rf <- rbind(positive,negative)
 trainset.rf$class <- as.factor(trainset.rf$class)
 
 if (sd == 'N') {
-	feat <- c("class","start_coverage","start_rpkm","coverage","stop_rpkm","accu_prop")
+	feat <- c("class","start_coverage","start_rpkm","coverage","stop_rpkm","accumulation_proportion")
 } else {
-	feat <- c("class","start_coverage","start_rpkm","coverage","stop_rpkm","accu_prop","SD_score") 
+	feat <- c("class","start_coverage","start_rpkm","coverage","stop_rpkm","accumulation_proportion","SD_score") 
 }
 
-cat("variables: ", feat,"\n",sep=" ")
 trainset <- trainset.rf[,feat]
 
 #	RandomForest
@@ -145,6 +145,18 @@ if (neg.prob < 0.25) {
 # run random forest model
 rf_output <- run_randomforest(trainset,pos.prob,neg.prob)
 
+preds.train = predict(rf_output, type="response")
+conf.matrix <- table(trainClass=trainset$class,predClass=preds.train)
+
+TP <- conf.matrix[2,2]
+FP <- conf.matrix[1,2]
+FN <- conf.matrix[2,1]
+
+precision <- TP/(TP + FP)
+recall <- TP/(TP + FN)
+cat("Precision ",precision,"\n",sep=" ")
+cat("Recall ",recall,"\n",sep=" ")
+
 # Variable Importance
 vimp <- paste(work_dir,"variable_importance.pdf",sep="")
 pdf(file=vimp)
@@ -152,7 +164,7 @@ varImpPlot(rf_output, type=2, n.var=length(feat), scale=FALSE, main="Variable Im
 dev.off()
 
 # Area Under the Curve
-ROC_curve <- paste(work_dir,"ROC_curve.pdf",sep="")
+ROC_curve <- paste(work_dir,"PR_and_ROC_curve.pdf",sep="")
 pdf(file=ROC_curve)
 prediction.rf <- as.vector(rf_output$votes[,2])
 pred.rf=prediction(prediction.rf,trainset[,1])
@@ -169,6 +181,12 @@ ggplot(roc.data.rf, aes(x=fpr, ymin=0, ymax=tpr)) +
     panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
 	axis.text=element_text(size=18),axis.title=element_text(size=18,face="bold")
 	)
+
+# precision
+pred.rf=prediction(prediction.rf,trainset$class)
+prec.rf <- performance(pred.rf, "prec", "rec")
+plot(prec.rf, colorize=T, cex.lab=1.75, cex.axis=2, cex=2)
+
 dev.off()
 
 
@@ -177,7 +195,7 @@ ORFs$pred <- predict(rf_output, ORFs, type="response")
 ORFs$prob <- predict(rf_output, ORFs, type="prob")[,2]
 
 head <- c("orf_id","gene","strand","length","start_codon","count","rpkm","coverage","SD_score","SD_pos","prob")
-result <- ORFs[which(ORFs$pred=="P"),head]
+result <- ORFs[which(ORFs$prob >= cutoff),head]
 
 cat("Total number of ORF families predicted ",length(unique(as.vector(result$gene))),"\n",sep=" ")
 
@@ -192,7 +210,6 @@ write.table(ORFs, file=result_file_all, sep = "\t",col.names = TRUE,row.names = 
 cutoff <- c(MINCOV,exp(MINRPKM))
 threshold <- paste(work_dir,"tmp/threshold.txt",sep="")
 write(cutoff,threshold,sep="\n")
-
 
 
 

@@ -29,7 +29,7 @@ use Getopt::Long;
 use POSIX;
 
 # Get command line arguments
-my ($genome,$blastdb,$positive_set,$min_read_len,$max_read_len,$MINORF,$identity,$evalue,$pcodons,$pgm,$work_dir,$script_dir,$threads) = @ARGV;
+my ($genome,$blastdb,$positive_set,$min_read_len,$max_read_len,$MINORF,$identity,$evalue,$pcodons,$pgm,$work_dir,$script_dir,$threads, $seedBYpass, $genetic_code) = @ARGV;
 
 my $upstream = 50;
 #----------------------------------------------------
@@ -75,18 +75,19 @@ foreach my $codon(@pcodons) {
 # read genome fasta file
 my $genomes = read_fasta($genome);
 
+
 # generate positive set 
 my $positive_set_gtf = $work_dir."/tmp/positive.gtf";
 if ($pgm == 1) { 
 	# postive set generated with prodigal
-	print "Generating the set of positive examples using Prodigal...\n";
+	print "Generating positive samples training set using Prodigal...\n";
 	my $positive_fasta = generate_prodigal_ORFs();
 	create_positive_file($positive_set,$positive_fasta);
 	print "Set of Positive examples created.\n";
 
 } elsif ($pgm == 2) { 
 	# postive set generated with Glimmer
-	print "Generating the set of positive examples using glimmer...\n";
+	print "Generating positive samples training set using glimmer...\n";
 	my $positive_fasta = generate_glimmer_ORFs();
 	create_positive_file($positive_set,$positive_fasta);
 	print "Set of Positive examples created.\n";
@@ -121,7 +122,7 @@ sub create_positive_file {
 	print G "#!positive set gtf file\n";
 
 	open (OUT, ">".$positive_set) or die "Error creating file $positive_set\n";
-	print OUT "orf_id\tstrand\n";
+	print OUT "orf_id\tstrand\tstart_codon\n";
 	open (F, $blast_rpt) or die  "Error reading file: $blast_rpt\n";
 	while (<F>) {
 		next if (/^Query_id/);
@@ -145,7 +146,7 @@ sub create_positive_file {
 
 		# ensure only valid ORFs are in positive set
 			($query_id) = $query_id =~ /^(.*)#/;
-			print OUT "$query_id\t$strand\n";
+			print OUT "$query_id\t$strand\t$start_codon\n";
 			$ORF_positive->{$query_id} = $strand;
 
 			my $gene = ($strand eq "+") ? $region.":FAM+".$stop: $region.":FAM-".$start;
@@ -179,11 +180,16 @@ sub generate_prodigal_ORFs {
 
 	my $search = `which prodigal 2>&1`;
 	chomp($search);
+
+    my $prodigal_cmd = "";
 	if ($search =~ /^which: no/) {
-		system($script_dir."/bin/prodigal -i $genome -f gff -o $positive_gff -q");
+		$prodigal_cmd = $script_dir."/bin/prodigal -i $genome -f gff -o $positive_gff -g $genetic_code -q";
 	} else {
-		system("prodigal -i $genome -f gff -o $positive_gff -q");
+		$prodigal_cmd = "prodigal -i $genome -f gff -o $positive_gff  -g $genetic_code -q";
 	}
+
+    if ($seedBYpass eq "Y") {$prodigal_cmd = $prodigal_cmd." -n"}
+    system($prodigal_cmd);
 
 	my $positive_fasta = $work_dir.'tmp/positive_set.fasta';
 	open (OUT, ">".$positive_fasta) or die "error creating file $positive_fasta\n";
@@ -201,6 +207,8 @@ sub generate_prodigal_ORFs {
 		my $orf = $region.":".$start."-".$stop;
 		
 		my ($aa_seq, $start_codon) = translate($start,$stop,$strand,$region);
+        next unless ($aa_seq);
+
 		print OUT ">$orf"."#".$strand."|".$start_codon."\n$aa_seq\n";
 
 	}
@@ -218,26 +226,29 @@ sub generate_glimmer_ORFs {
 	my $search = `which glimmer3 2>&1`;
 	chomp($search);
 
-	my $glimmer_icm = $work_dir."tmp/glimmer.icm";
-	my $positive_predict = $work_dir."tmp/positive_set";
+	my $glimmer_icm = $work_dir."/tmp/glimmer.icm";
+	my $positive_predict = $work_dir."/tmp/positive_set";
 	my $start_cdns = lc($pcodons);
 
+    #print $script_dir."/bin/glimmer/glimmer3 $genome $glimmer_icm $positive_predict -A $start_cdns -g $MINORF -o 300\n"; exit;
+
 	if ($search =~ /^which: no/) {
-		system($script_dir."bin/glimmer/bin/build-icm $glimmer_icm< $genome");
-		system($script_dir."bin/glimmer/glimmer3 $genome glimmer.icm $positive_predict -A $start_cdns");
+		system($script_dir."/bin/glimmer/build-icm $glimmer_icm< $genome");
+		system($script_dir."/bin/glimmer/glimmer3 $genome $glimmer_icm $positive_predict -A $start_cdns -g $MINORF -o 300");
 	} else {
-		system("bin/glimmer/bin/build-icm $glimmer_icm< $genome");
-		system("glimmer3 $genome glimmer.icm $positive_predict -A $start_cdns");
+		system("build-icm $glimmer_icm< $genome");
+		system("glimmer3 $genome $glimmer_icm $positive_predict -A $start_cdns -g $MINORF -o 300");
 	}
 
-	my $positive_fasta = $work_dir."tmp/positive_set.fasta";
+	my $positive_fasta = $work_dir."/tmp/positive_set.fasta";
 	open (OUT, ">".$positive_fasta) or die "error creating file $positive_fasta\n";
 	open (IN, $positive_predict.".predict") or die  "Error reading file: ".$positive_predict.".predict\n";
-	my $region = "";
+	my $region;
 	while (<IN>) {
 		chomp $_;
 		if (/^>/) {
-			($region) = $_ =~ /^>(.*) dna:/;
+			$_ =~ s/>//;
+			$region = (split ' ', $_)[0];
 		} else {
 			my @line = split '\s+', $_;
 			my $strand = (split '', $line[3])[0];
@@ -247,6 +258,9 @@ sub generate_glimmer_ORFs {
 			my $orf = $region.":".$start."-".$stop;
 
 			my ($aa_seq, $start_codon) = translate($start,$stop,$strand,$region);
+
+            next unless ($aa_seq);
+
 			print OUT ">$orf"."#".$strand."|".$start_codon."\n$aa_seq\n";
 		}
 	}
@@ -267,17 +281,24 @@ sub translate {
 	my $length = $stop - $start + 1;
 	my $dna_seq = ($strand eq '+') ? substr($genomes->{$region}, $start - 1,$length) : revdnacomp(substr($genomes->{$region}, $start-1,$length));
 
+    unless ($dna_seq) {return "", ""}
+
 	my $start_codon = uc(substr($dna_seq, 0, 3));
 	my $aa_seq = "";
 	for (my $i = 0; $i <= (length($dna_seq) - 3); $i = $i + 3) {
 		my $codon = uc(substr($dna_seq, $i, 3));
 		last if ($codon eq '*');
-		$aa_seq = $aa_seq.$translationHash{$codon};
+        my $aa = $translationHash{$codon};
+
+        # if amino acid doesn't exist then 
+        unless ($aa) {$aa_seq = ""; last}
+		$aa_seq = $aa_seq.$aa;
 	}
 
 	return $aa_seq, $start_codon;
 
 }
+
 
 sub revdnacomp {
     my $dna = shift;
@@ -285,6 +306,7 @@ sub revdnacomp {
     $revcomp =~ tr/ACGTacgt/TGCAtgca/;
     return $revcomp;
 }
+
 
 sub read_fasta {
 	my $file = $_[0];

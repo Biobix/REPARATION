@@ -29,7 +29,7 @@ use Getopt::Long;
 use POSIX;
 
 # Get command line arguments
-my ($genome,$blastdb,$occupancyFile,$positive_set,$ORF_file,$MINORF,$OFFSET_START,$OFFSET_STOP,$OFFSET,$SEED,$identity,$evalue,$codons,$pcodons,$pgm,$work_dir,$script_dir, $threads, $read_count_file) = @ARGV;
+my ($genome,$occupancyFile,$positive_set,$ORF_file,$MINORF,$OFFSET_START,$OFFSET_STOP,$OFFSET,$SEED,$codons,$work_dir,$script_dir, $threads) = @ARGV;
 
 
 #----------------------------------------------------
@@ -71,13 +71,6 @@ foreach my $codon(@codons) {
 	$start_codons->{$codon} = 1;
 }
 
-# valid positive set codons
-my $positive_codons = {};
-my @pcodons = split /,/, $pcodons;
-foreach my $codon(@pcodons) {
-	$positive_codons->{$codon} = 1;
-}
-
 # read genome fasta file
 my $genomes = read_fasta($genome);
 
@@ -97,12 +90,12 @@ my $SEEDLENGTH 	= length($SEED);
 my $THRESHOLD 	= 3*($SEEDLENGTH - 2);
 my ($SD_markov_score, $Max_loc_score, $markov_score_threshold, $perfect_markov_score, $initial_threshold) = Train_SD_Markov_Model($ORF_positive);
 
-print "\tMarkov Threshold score $markov_score_threshold\n";
-print "\tPrefect Markov Score $perfect_markov_score\n";
+print "Markov Threshold score $markov_score_threshold\n";
+print "Prefect Markov Score $perfect_markov_score\n";
 
 write_ORFs_to_file($ORFs, $ORF_file);
 
-print "\tORF Ribo-seq info written to file.\n";
+print "ORF Ribo-seq info written to file.\n";
 
 
 ##################
@@ -119,7 +112,7 @@ sub write_ORFs_to_file {
 	my $count_nterm = 0;
 
 	open(F, ">$filename") or die ("Can't creat file $filename: $!\n");
-	print F "orf_id\tgene\tstrand\tlength\tstart_codon\tcount\trpkm\tcoverage\tstart_coverage\tstart_rpkm\tstop_rpkm\taccu_prop\tSD_score\tSD_pos\n";
+	print F "orf_id\tgene\tstrand\tlength\tstart_codon\tcount\trpkm\tcoverage\tstart_coverage\tstart_rpkm\tstop_rpkm\taccumulation_proportion\tSD_score\tSD_pos\n";
 	foreach my $ORF (sort keys %$ORFs) {
 		my $length 		= $ORFs->{$ORF}->{len};
 		my $rpkm 		= $ORFs->{$ORF}->{rpkm};
@@ -146,7 +139,7 @@ sub write_ORFs_to_file {
 	}
 	close F;
 
-	print "\tTotal number of ORFs generated $count_orf.\n";
+	print "Total number of ORFs generated $count_orf.\n";
 
 }
 
@@ -162,20 +155,26 @@ sub Accumulation_proportion {
 	my $length = $stop - $start + 1;
 	my $tmp_OFFSET_START = $OFFSET_START;
 	if ($length < $OFFSET_START) {$tmp_OFFSET_START = ceil(0.7*$length)}
-	my $start_start = ($strand eq '+') ? $start - 3: $stop - $tmp_OFFSET_START;
-	my $start_stop = ($strand eq '+') ? $start + $tmp_OFFSET_START: $stop + 3;
+	my $start_start = ($strand eq '+') ? $start: $stop - $tmp_OFFSET_START;
+	my $start_stop = ($strand eq '+') ? $start + $tmp_OFFSET_START: $stop;
 	my $rest_start = ($strand eq '+') ? $start + $tmp_OFFSET_START + 1: $start;
 	my $rest_stop = ($strand eq '+') ? $stop : $stop - $tmp_OFFSET_START - 1;
+
+    my $orf_average_reads = $count/$length;
 
 	my $count_rest = 0;
 	my $count_start = 0;
 	for ( my $pos = $start; $pos <= $stop; $pos++) {
 		if (exists $reads_table->{$region}->{$strand}->{$pos}) {
-			if ($start_start <= $pos and $pos <= $start_stop) { 
-				$count_start += $reads_table->{$region}->{$strand}->{$pos};
+			if ($start_start <= $pos and $pos <= $start_stop) {
+                my $reads = $reads_table->{$region}->{$strand}->{$pos};
+				$count_start += $reads;
 			}
-			if ($rest_start <= $pos and $pos <= $rest_stop) { 
-				$count_rest += $reads_table->{$region}->{$strand}->{$pos};
+
+			if ($rest_start <= $pos and $pos <= $rest_stop) {
+                my $reads = $reads_table->{$region}->{$strand}->{$pos};
+                #if ($reads >= 0.7*$count) {$reads = $orf_average_reads}
+				$count_rest += $reads;
 			}
 		}
 	}
@@ -188,6 +187,7 @@ sub Accumulation_proportion {
 	} else {
 		return $average_start/$average_rest, $average_start, $average_rest;
 	}
+
 }
 
 
@@ -584,7 +584,7 @@ sub Train_SD_Markov_Model {
     my $perfect_markov_score 	= $max_score+$max_loc_posib;
     my $initial_threshold 		= ($perfect_markov_score+$markov_score_threshold)*0.5;
 
-	print "\tNumber of sequences used in SD scoring training set $N\n";
+	print "Number of sequences used in SD scoring training set $N\n";
 
 	return $SD_markov_score, $Max_loc_score, $markov_score_threshold, $perfect_markov_score, $initial_threshold;
 }

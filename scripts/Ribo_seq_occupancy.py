@@ -63,7 +63,6 @@ def process_ribo(inputFile,occupancy,min_read_len,max_read_len,outputFileS,outpu
         line = inFile.readline()
         while line != '':
             if not (line.startswith('#') or line.startswith('length') or line.startswith('default')):
-                print line
                 fields = line.split()
                 offset[str(fields[0])] = int(fields[1])
                 

@@ -33,7 +33,8 @@ use POSIX;
 #############################################################################
 
 
-my ($RF_prediction,$genome,$occupancyFile,$output_prefix,$threshold,$OFFSET_START,$MINCOUNT, $gtf_file, $predicted_ORFs, $predicted_ORFs_bed, $predicted_ORFs_fasta) = @ARGV;
+my ($RF_prediction,$genome,$occupancyFile,$output_prefix,$threshold,$OFFSET_START,$MINCOUNT, $predicted_ORFs, $predicted_ORFs_bed, $predicted_ORFs_fasta, $gtf_file) = @ARGV;
+
 
 my $WINDOW = 21;	# Window to calculate kurtosis
 my $REGION = 30;	# Region to account for any mapping errors we assume the aprox. length of a ribosome.
@@ -116,7 +117,7 @@ if ($gtf_file) {	# check if gtf is a file
 				$count_Extension++;
 			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Intergenic') {
 				$count_Intergenic++;
-			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Internal') {
+			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq "3' truncation") {
 				$count_Internal++;
 			} elsif ($Classified_ORFs->{$gene}->{$ORF}->{orf_type} eq 'Opposite strand') {
 				$count_Reverse++;
@@ -1106,6 +1107,7 @@ sub translate {
 
 }
 
+
 sub read_file {
 
 	my $file = $_[0];
@@ -1259,6 +1261,7 @@ sub get_read_table {
 	
 	return $read,$mapped_total;
 }
+
 
 sub revdnacomp {
     my $dna = shift;

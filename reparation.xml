@@ -18,6 +18,9 @@
 		--mr $MINREAD
 		--ost $OFFSET_START
 		--osp $OFFSET_STOP
+		--gcode $gcode
+		--by $by
+		--score $score
 	
 		<!-- Shine dalgarno sequence -->
 		--sd $choose_sd.sd_usage
@@ -27,6 +30,7 @@
 		--id $identity
 		--ev $evalue
 		--pg $pgm
+
 		<!-- pset $positive_set -->
 		--cdn $start_codons
 		--ncdn $start_codon_nset
@@ -69,11 +73,15 @@
 		<param name="start_codon_pset" size="24" value="ATG,GTG,TTG" type="text" label="Start codons for the positive set" />
 		<param name="start_codon_nset" size="24" value="CTG" type="text" label="Start codons for the negative set" />
 
+		<param name="score" size="10" value="0.5" type="float" label="Prediction score threshold." />
+
 		<!-- Positive set generation -->
 		<param name="pgm" type="select" label="Tool for initial positive set" multiple="false">
 			<option value="1" selected="true">prodigal</option>
 			<option value="2">glimmer3</option>
 		</param>
+		<param name="by" size="1" value="N" type="text" label="bypass Shine-Dalgarno trainer in prodigal." />
+		<param name="gcode" size="10" value="11" type="integer" label="Genetic code" />
 
 		<param name="identity" value="0.75" type="float" label="Identity threshold for BLAST search" help=""/>
 		<param name="evalue" value="0.00001" type="float" label="E-value threshold for BLAST search" help=""/>
