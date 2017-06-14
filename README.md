@@ -70,7 +70,7 @@ The tool does not rerquire any special installation outside the prerequisites.
 Usage: ./reparation.pl -sam riboseq_alignment_files_sam_format -g genome_fasta_file -sdir REPARATION_scripts_directory -db curated_protein_db(fasta) [options]
 
 
-Mandatory
+Mandatory input variables
 
 	-sam:   Ribosome alignment file (sam)
 	-g:     Genome fasta file
@@ -78,7 +78,7 @@ Mandatory
 	-db:    fasta database of curated bacteria protein sequences
 
 
-options
+optional input variables
 
 	-gtf:   GTF genome annotation file
 	-wdir:  working directory (defualts to current directory)
