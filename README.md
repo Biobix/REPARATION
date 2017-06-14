@@ -113,11 +113,3 @@ _Predicted_ORFs.bed                   bed file of REPARATION predicted open read
 _predicted_ORFs.fasta                 fasta file of predicted translated open reading frame
 _plastid_image.png                    Image showing plstid predicted P sites (optional)
 
-
-
-# Data
-
-The data sets used for the project can be downloaded from the project website xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-
