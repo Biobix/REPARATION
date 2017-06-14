@@ -233,7 +233,7 @@ sub find_all_ORFs {
 				for (my $i = $start; $i <= (length($sequenceEntry) - 3); $i = $i + 3) {
 					my $codon = uc(substr($sequenceEntry, $i, 3));
 					last if (length($codon) < 3);
-					if (!(exists $translationHash{$codon})) {print "not found"; last}
+					if (!(exists $translationHash{$codon})) {$aa_seq = ""; last}
 
 					my $aa = $translationHash{$codon};
 					if ($aa eq "*") {
