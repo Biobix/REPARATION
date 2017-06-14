@@ -185,7 +185,7 @@ ggplot(roc.data.rf, aes(x=fpr, ymin=0, ymax=tpr)) +
 # precision
 pred.rf=prediction(prediction.rf,trainset$class)
 prec.rf <- performance(pred.rf, "prec", "rec")
-plot(prec.rf, colorize=T, cex.lab=1.75, cex.axis=2, cex=2)
+plot(prec.rf, colorize=T, cex.lab=2.5, cex.axis=2.5, cex=2.5, main="Precision-Recall Curve)
 
 dev.off()
 
