@@ -109,9 +109,10 @@ _Ribo-seq_AntiSense_"psite".bedgraph  	Antisense bedgraph files for genome wide 
 _Predicted_ORFs.txt                   	List of translated open reading frames predicted by REPARATION
 _Predicted_ORFs.bed                   	bed file of REPARATION predicted open reading frames
 _predicted_ORFs.fasta                 	fasta file of predicted translated open reading frame
-_plastid_image.png			Image showing plstid predicted P sites (optional)
-PR_ROC_curve.pdf		       	Plots for the Precision-Recall and ROC curve to evalaute model performance
-metagene_profile.pdf		       	Metagene profile around the start and stop of ORFs in the positive set
-Scurve.pdf			       	Plot of the Sigmoid curve showing the estimated minimum thresholds
-Variable_importance.pdf	       		Varible importance (Gini) of the faetures used in the model
+_plastid_image.png			            Image showing plstid predicted P sites (optional)
+PR_ROC_curve.pdf		       	        Plots for the Precision-Recall and ROC curve to evalaute model performance
+metagene_profile.pdf		       	    Metagene profile around the start and stop of ORFs in the positive set
+Scurve.pdf			       	            Plot of the Sigmoid curve showing the estimated minimum thresholds
+variable_importance.pdf	       		    Varible importance (Gini) of the faetures used in the model
+
 
