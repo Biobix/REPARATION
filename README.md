@@ -15,13 +15,11 @@ The REPARATION workflow consist of:
 4) Start Site selection.
 
 
-<<<<<<< HEAD
 NB: The ribosome profiling data should be aligned onto the same genome used for the analyzed!
 
 REPARATION was developed and tested on a Linux system.
 
-=======
->>>>>>> origin/master
+
 # Requirements
 
 The REPARATION software is primarily written in perl, python2.7 and R. For each dataset the complete REPARATION workflow (from the sam files to final results) takes under 90 minutes.
@@ -124,18 +122,31 @@ Optional input variables
 Output files
 
 _Ribo-seq_Sense_"psite".bedgraph      	Sense bedgraph files for genome wide ribosome profile visualization (psite = 1, 3 or 5)
+
 _Ribo-seq_AntiSense_"psite".bedgraph  	Antisense bedgraph files for genome wide ribosome profile visualization (psite = 1, 3 or 5)
+
 _Predicted_ORFs.txt                   	List of translated open reading frames predicted by REPARATION
+
 _Predicted_ORFs.bed                   	bed file of REPARATION predicted open reading frames
+
 _predicted_ORFs.fasta                 	fasta file of predicted translated open reading frame
+
 _plastid_image.png			Image showing plstid predicted P sites (optional)
+
 _PR_ROC_curve.pdf                       Precision-Recall and ROC curve plots
+
 _metagene_profile.pdf                   Metagene profiles around the start and stop of ORFs in positive set
+
 _Scurve.pdf                             Sigmoid curve with estimated thresholds
+
 _variable_importance.pdf                variable importance plot
+
 _PR_ROC_curve.pdf		       	Plots for the Precision-Recall and ROC curve to evalaute model performance
+
 _metagene_profile.pdf		       	Metagene profile around the start and stop of ORFs in the positive set
+
 _Scurve.pdf			       	Plot of the Sigmoid curve showing the estimated minimum thresholds
+
 _variable_importance.pdf	       	Varible importance (Gini) of the faetures used in the model
 
 
