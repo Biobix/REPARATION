@@ -32,6 +32,7 @@ use POSIX;
 my ($genome,$blastdb,$positive_set,$min_read_len,$max_read_len,$MINORF,$identity,$evalue,$pcodons,$pgm,$work_dir,$script_dir,$threads, $seedBYpass, $genetic_code) = @ARGV;
 
 my $upstream = 50;
+my $MIN_POS_SEQ = 200;      # minimum number of requence required in the positive set.
 #----------------------------------------------------
 #			EXECUTION
 #----------------------------------------------------
@@ -71,10 +72,8 @@ foreach my $codon(@pcodons) {
 	$positive_codons->{$codon} = 1;
 }
 
-
 # read genome fasta file
 my $genomes = read_fasta($genome);
-
 
 # generate positive set 
 my $positive_set_gtf = $work_dir."/tmp/positive.gtf";
@@ -107,15 +106,20 @@ sub create_positive_file {
 
 	my $ORF_positive = {};
 
+    my $count = 0;
 	my $blast_rpt = $work_dir."tmp/positive_set.bls";
 	my $search = `which usearch 2>&1`;
+    my $ublast_cmd = "";
 	chomp($search);
 	if ($search =~ /^which: no/) {
-		system($script_dir."/bin/usearch -ublast $positive_fasta -db $blastdb -id $identity -evalue $evalue -maxhits 1 -blast6out $blast_rpt -threads $threads 2> /dev/null");
+		$ublast_cmd = $script_dir."/bin/usearch -ublast $positive_fasta -db $blastdb -id $identity -evalue $evalue -maxhits 1 -blast6out $blast_rpt -threads $threads 2> /dev/null";
 	} else {
-		system("usearch -ublast $positive_fasta -db $blastdb -id $identity -evalue $evalue -maxhits 1 -blast6out $blast_rpt -threads $threads 2> /dev/null");
+		$ublast_cmd = "usearch -ublast $positive_fasta -db $blastdb -id $identity -evalue $evalue -maxhits 1 -blast6out $blast_rpt -threads $threads 2> /dev/null";
 	}
 
+    system($ublast_cmd) == 0 
+        or die ("Error running -ublast search. Please ensure USEARCH is properly installed\n");
+    
 	# GTF file
 	open (G, ">".$positive_set_gtf) or die "Error creating file $positive_set_gtf\n";
 	print G "#!positive set gtf file\n";
@@ -142,9 +146,11 @@ sub create_positive_file {
 
 		my $length = $stop - $start + 1;
 
+        # ensure only valid ORFs are in positive set
 		if (exists $positive_codons->{$start_codon} and $perc_ident >= $identity and $length >= $MINORF) {
 
-		# ensure only valid ORFs are in positive set
+            $count++;
+
 			($query_id) = $query_id =~ /^(.*)#/;
 			print OUT "$query_id\t$strand\t$start_codon\n";
 			$ORF_positive->{$query_id} = $strand;
@@ -169,6 +175,12 @@ sub create_positive_file {
 	close OUT;
 	close G;
 
+    print "Total number of ORFs in positive set $count\n";
+
+    if ($count < $MIN_POS_SEQ) {
+        print "Not enough sequence samples in the positive set. REAPARATION require a minimum of $MIN_POS_SEQ seqeucnes in the positive set\n";
+        exit();
+    }
 	return $ORF_positive;
 }
 
@@ -183,14 +195,17 @@ sub generate_prodigal_ORFs {
 
     my $prodigal_cmd = "";
 	if ($search =~ /^which: no/) {
-		$prodigal_cmd = $script_dir."/bin/prodigal -i $genome -f gff -o $positive_gff -g $genetic_code -q";
+		$prodigal_cmd = $script_dir."/bin/prodigal -i $genome -f gff -o $positive_gff -g $genetic_code -q 2> /dev/null";
 	} else {
-		$prodigal_cmd = "prodigal -i $genome -f gff -o $positive_gff  -g $genetic_code -q";
+		$prodigal_cmd = "prodigal -i $genome -f gff -o $positive_gff  -g $genetic_code -q 2> /dev/null";
 	}
 
     if ($seedBYpass eq "Y") {$prodigal_cmd = $prodigal_cmd." -n"}
-    system($prodigal_cmd);
 
+    system($prodigal_cmd) == 0 
+        or die ("Error running prodigal. Please ensure prodigal is properly installed\n");
+    
+    my $count = 0;
 	my $positive_fasta = $work_dir.'tmp/positive_set.fasta';
 	open (OUT, ">".$positive_fasta) or die "error creating file $positive_fasta\n";
 	open (IN, $positive_gff) or die "Error reading file: $positive_gff\n";
@@ -210,12 +225,18 @@ sub generate_prodigal_ORFs {
         next unless ($aa_seq);
 
 		print OUT ">$orf"."#".$strand."|".$start_codon."\n$aa_seq\n";
-
+        $count++;
 	}
 	close IN;
 	close OUT;
 
+    if ($count < $MIN_POS_SEQ) {
+        print "Not enough sequence samples in the positive set. REAPARATION require a minimum of $MIN_POS_SEQ seqeucnes in the positive set\n";
+        exit();
+    }
+
 	return $positive_fasta;
+
 }
 
 
@@ -230,16 +251,24 @@ sub generate_glimmer_ORFs {
 	my $positive_predict = $work_dir."/tmp/positive_set";
 	my $start_cdns = lc($pcodons);
 
-    #print $script_dir."/bin/glimmer/glimmer3 $genome $glimmer_icm $positive_predict -A $start_cdns -g $MINORF -o 300\n"; exit;
-
+    my $build_cmd = "";
+    my $glimmer_cmd = "";
 	if ($search =~ /^which: no/) {
-		system($script_dir."/bin/glimmer/build-icm $glimmer_icm< $genome");
-		system($script_dir."/bin/glimmer/glimmer3 $genome $glimmer_icm $positive_predict -A $start_cdns -g $MINORF -o 300");
+		$build_cmd = $script_dir."/bin/glimmer/build-icm $glimmer_icm< $genome 2> /dev/null";
+		$glimmer_cmd = $script_dir."/bin/glimmer/glimmer3 $genome $glimmer_icm $positive_predict -A $start_cdns -g $MINORF 2> /dev/null";
 	} else {
-		system("build-icm $glimmer_icm< $genome");
-		system("glimmer3 $genome $glimmer_icm $positive_predict -A $start_cdns -g $MINORF -o 300");
+		$build_cmd = "build-icm $glimmer_icm< $genome 2> /dev/null";
+		$glimmer_cmd = "glimmer3 $genome $glimmer_icm $positive_predict -A $start_cdns -g $MINORF 2> /dev/null";
 	}
 
+    system($build_cmd) == 0 
+        or die ("Error running build-icm tool. Please ensure gglimmer build-icm tool is properly installed\n");
+    
+    system($glimmer_cmd) == 0 
+        or die ("Error running glimmer3. Please ensure glimmer3 is properly installed\n");
+    
+
+    my $count = 0;
 	my $positive_fasta = $work_dir."/tmp/positive_set.fasta";
 	open (OUT, ">".$positive_fasta) or die "error creating file $positive_fasta\n";
 	open (IN, $positive_predict.".predict") or die  "Error reading file: ".$positive_predict.".predict\n";
@@ -262,10 +291,16 @@ sub generate_glimmer_ORFs {
             next unless ($aa_seq);
 
 			print OUT ">$orf"."#".$strand."|".$start_codon."\n$aa_seq\n";
+            $count++;
 		}
 	}
 	close OUT;
 	close IN;
+
+    if ($count < $MIN_POS_SEQ) {
+        print "Not enough sequence samples in the positive set. REAPARATION require a minimum of $MIN_POS_SEQ seqeucnes in the positive set\n";
+        exit();
+    }
 
 	return $positive_fasta;
 }

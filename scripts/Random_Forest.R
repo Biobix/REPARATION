@@ -78,7 +78,7 @@ plot(positive$coverage ~ positive$log_rpkm, main=head, xlab="Log Read density", 
 points(positive$log_rpkm,predict(model),lty=0.5, cex=0.5, pch=20,col='red')
 abline(h=MINCOV, col="blue")
 abline(v=MINRPKM, col="blue")
-dev.off()
+invisible(dev.off()) 
 
 cat("Minimum Log Read density ", MINRPKM,"\n", sep=" ")
 cat("Minimum ORF coverage ", MINCOV,"\n", sep=" ")
@@ -161,7 +161,7 @@ cat("Recall ",recall,"\n",sep=" ")
 vimp <- paste(work_dir,"variable_importance.pdf",sep="")
 pdf(file=vimp)
 varImpPlot(rf_output, type=2, n.var=length(feat), scale=FALSE, main="Variable Importance (Gini) predictors")
-dev.off()
+invisible(dev.off()) 
 
 # Area Under the Curve
 ROC_curve <- paste(work_dir,"PR_and_ROC_curve.pdf",sep="")
@@ -187,7 +187,7 @@ pred.rf=prediction(prediction.rf,trainset$class)
 prec.rf <- performance(pred.rf, "prec", "rec")
 plot(prec.rf, colorize=T, cex.lab=1.75, cex.axis=2, cex=2)
 
-dev.off()
+invisible(dev.off()) 
 
 
 # PREDICTION

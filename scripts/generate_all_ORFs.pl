@@ -71,15 +71,23 @@ foreach my $codon(@codons) {
 	$start_codons->{$codon} = 1;
 }
 
+# check if input files were properly generated
+unless (-e $positive_set) {
+    print "'$positive_set' file does not exist.\n";
+    exit(1);
+}
+
+unless (-e $occupancyFile) {
+    print "'$occupancyFile' file does not exist.\n";
+    exit(1);
+}
+
 # read genome fasta file
 my $genomes = read_fasta($genome);
 
 # read RPF positional information from file
 my ($reads_table,$mapped_total) = get_read_table($occupancyFile);
 
-# generate all ORFs
-my $max_length = 1;
-my $ORFs = find_all_ORFs($genomes);
 
 # generate positive set 
 my $ORF_positive = get_positive_set($positive_set);
@@ -92,6 +100,10 @@ my ($SD_markov_score, $Max_loc_score, $markov_score_threshold, $perfect_markov_s
 
 print "Markov Threshold score $markov_score_threshold\n";
 print "Prefect Markov Score $perfect_markov_score\n";
+
+# generate all ORFs
+my $max_length = 1;
+my $ORFs = find_all_ORFs($genomes);
 
 write_ORFs_to_file($ORFs, $ORF_file);
 
@@ -233,7 +245,11 @@ sub find_all_ORFs {
 				for (my $i = $start; $i <= (length($sequenceEntry) - 3); $i = $i + 3) {
 					my $codon = uc(substr($sequenceEntry, $i, 3));
 					last if (length($codon) < 3);
-					if (!(exists $translationHash{$codon})) {print "not found"; last}
+					if (!(exists $translationHash{$codon})) {
+                        $aa_seq = "";
+                        $tr_seq = ""; 
+                        last;
+                    }
 
 					my $aa = $translationHash{$codon};
 					if ($aa eq "*") {
@@ -383,6 +399,7 @@ sub read_fasta {
 		my $id  = $seqs->display_id;	
 		my $seq = $seqs->seq;
 		my $desc = $seqs->desc;
+
 		$cdna->{$id} = uc($seq);
 	}
 	return $cdna;
@@ -476,15 +493,16 @@ sub SD_kmer_score {
 	my @nucl = split '', $seq;
 	my $scorei;
 	for(my $i=0; $i < scalar(@nucl); $i++) {
-		unless (defined $scorei) {
-			$scorei = $SD_markov_score->{$i}->{$nucl[$i]};
+		if ($scorei) {
+			if ($SD_markov_score->{$i}->{$nucl[$i]}) {
+                $scorei = $scorei*$SD_markov_score->{$i}->{$nucl[$i]};
+            }
 		} else {
-			$scorei = $scorei*$SD_markov_score->{$i}->{$nucl[$i]};
-		}
+			$scorei = $SD_markov_score->{$i}->{$nucl[$i]};
+        }
 	}
 
 	return($Max_loc_score->{$pos} + $scorei);
-
 }
 
 

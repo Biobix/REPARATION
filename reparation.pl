@@ -77,7 +77,7 @@ my $script_dir = $dirname."/scripts";	# Directory where the script files are sto
 
 
 # Input variables
-my $threads = 4;			# number of threads used by the USEARCH tool
+my $threads = 1;			# number of threads used by the USEARCH tool
 my $workdir;				# working directory to store files (defaults to current directoy)
 my $experiment;				# Experiment name
 my $gtf;				    # Genome annotation file (gtf) [if avialable]
@@ -327,18 +327,18 @@ my ($work_dir, $tmp_dir) = check_working_dir($workdir);
 
 
 # append work_dir to output files
-unless($bedgraphS) {$bedgraphS = $work_dir.$experiment."Ribo-seq_Sense_".$occupancy.".bedgraph";}
-unless($bedgraphAS) {$bedgraphAS = $work_dir.$experiment."Ribo-seq_AntiSense_".$occupancy.".bedgraph";}
-unless($predicted_ORFs) {$predicted_ORFs= $work_dir.$experiment."Predicted_ORFs.txt";}
-unless($predicted_ORFs_bed) {$predicted_ORFs_bed = $work_dir.$experiment."Predicted_ORFs.bed";}
-unless($predicted_ORFs_fasta) {$predicted_ORFs_fasta = $work_dir.$experiment."Predicted_ORFs.fasta";}
-unless($plastid_image) {$plastid_image = $work_dir.$experiment."p_site_offset.png";}
+unless($bedgraphS) {$bedgraphS = $work_dir."/".$experiment."Ribo-seq_Sense_".$occupancy.".bedgraph";}
+unless($bedgraphAS) {$bedgraphAS = $work_dir."/".$experiment."Ribo-seq_AntiSense_".$occupancy.".bedgraph";}
+unless($predicted_ORFs) {$predicted_ORFs= $work_dir."/".$experiment."Predicted_ORFs.txt";}
+unless($predicted_ORFs_bed) {$predicted_ORFs_bed = $work_dir."/".$experiment."Predicted_ORFs.bed";}
+unless($predicted_ORFs_fasta) {$predicted_ORFs_fasta = $work_dir."/".$experiment."Predicted_ORFs.fasta";}
+unless($plastid_image) {$plastid_image = $work_dir."/".$experiment."p_site_offset.png";}
 
 
 # generate positive set
-my $positive_set = $work_dir."tmp/positive_set.txt";
+my $positive_set = $work_dir."/tmp/positive_set.txt";
 print "Generate positive set...\n";
-my $positive_set_gtf = $work_dir.'tmp/positive.gtf';
+my $positive_set_gtf = $work_dir.'/tmp/positive.gtf';
 my $cmd_positive = "perl ".$script_dir."/positive_set.pl $genome $blastdb $positive_set $min_read_len $max_read_len $MINORF $identity $evalue $start_codon_pset $pgm $work_dir $script_dir $threads $seedBYpass $genetic_code";
 print "$cmd_positive\n\n";
 system($cmd_positive);
@@ -370,21 +370,24 @@ if ($occupancy == 1) {
 
 # Generate occupancy file
 print "Generating ribosome occupancy file..\n";
-my $occupancyFile = $work_dir.$experiment."Ribo-seq_".$occupancy."_occupancy.txt";
+my $occupancyFile = $work_dir."/".$experiment."Ribo-seq_".$occupancy."_occupancy.txt";
 my $bedgraphS_prefix = $experiment."Ribo-seq_Sense_".$occupancy;
 my $bedgraphAS_prefix = $experiment."Ribo-seq_AntiSense_".$occupancy;
 my $cmd_occupancy = "python ".$script_dir."/Ribo_seq_occupancy.py $sam_file $occupancy $min_read_len $max_read_len $bedgraphS $bedgraphAS $occupancyFile $bedgraphS_prefix $bedgraphAS_prefix $psite_offset_file";
 print "$cmd_occupancy\n\n";
 system($cmd_occupancy);
+unless (-e $occupancyFile) {
+    print "'$occupancyFile' file does not exist.\n";
+    exit(1);
+}
 print "Done.\n\n";
 
 
 # Generate all possible ORFs
 print "Generate all possible ORFs...\n";
 my $codons = $start_codons.",".$start_codon_pset.",".$start_codon_nset;	# combine the start codons
-my $ORF_file = $work_dir."tmp/all_valid_ORFs.txt";
+my $ORF_file = $work_dir."/tmp/all_valid_ORFs.txt";
 my $cmd_orf_gen = "perl ".$script_dir."/generate_all_ORFs.pl $genome $occupancyFile $positive_set $ORF_file $MINORF $OFFSET_START $OFFSET_STOP $OFFSET_SD $SEED $codons $work_dir $script_dir $threads";
-
 print "$cmd_orf_gen\n\n";
 print "\n";
 system($cmd_orf_gen);
@@ -402,19 +405,23 @@ print "Done.\n\n";
 
 # ORF prediction
 print "Performing ORF prediction analysis..\n";
-my $RF_prediction = $work_dir."tmp/RF_predicted_ORFs.txt";
-my $threshold = $work_dir."tmp/threshold.txt";
+my $RF_prediction = $work_dir."/tmp/RF_predicted_ORFs.txt";
+my $threshold = $work_dir."/tmp/threshold.txt";
 
 my $RF_command = "Rscript ".$script_dir."/Random_Forest.R $ORF_file $positive_set $work_dir $start_codons $start_codon_nset $USESD $score";
 print "$RF_command\n\n";
 print "\n";
 system($RF_command);
+unless (-e $RF_prediction) {
+    print "'$RF_prediction' file does not exist.\n";
+    exit(1);
+}
 print "Done.\n\n";
 
 
 # Post processing
 print "Cleaning up RF predictions..\n";
-my $output_prefix = $work_dir.$experiment."Predicted_ORFs";
+my $output_prefix = $work_dir."/".$experiment."Predicted_ORFs";
 my $processing_cmd = "";
 if ($gtf) {
     $processing_cmd = "perl ".$script_dir."/post_processing.pl $RF_prediction $genome $occupancyFile $output_prefix $threshold $OFFSET_START $MINREAD $predicted_ORFs $predicted_ORFs_bed $predicted_ORFs_fasta $gtf";
@@ -441,33 +448,39 @@ sub generate_p_site {
     my $min_l = $_[2];
     my $max_l =$_[3];
 
-    my $run_name = $work_dir."tmp/plastid";
-
-    # convert sam to bam and index
-    my $bam = $work_dir."tmp/ribo_bam.bam";
+    # temporary files
+    my $run_name = $work_dir."/tmp/plastid";
+    my $bam = $work_dir."/tmp/ribo_bam.bam";
+    my $sort_tmp_file = $work_dir."/tmp/check_sort.txt";
+    
     my $cmd_sam2bam = "samtools view -bS $sam | samtools sort -o $bam";
-    system($cmd_sam2bam);
+    system($cmd_sam2bam) == 0 
+        or die ("Error running samtools. Please ensure the samtools is properly installed\n");
 
     my $command_index = "samtools index ".$bam;
-    system($command_index);
+    system($command_index) == 0 
+        or die ("Error running samtools. Please ensure the samtools is properly installed\n");
     
     #Build command
     my $command_meta = "metagene generate -q ".$run_name." --landmark cds_start --annotation_files ".$genes_gtf." 2> /dev/null";
     print "$command_meta\n";
-    system($command_meta);
+    system($command_meta) == 0 
+        or die ("Error running metagene. Please ensure the Plastid tool is properly installed\n");
 
     #Build command
     my $psitefile = $run_name."_rois.txt";
     my $command_psite = "psite -q ".$run_name."_rois.txt ".$run_name." --min_length ".$min_l." --max_length ".$max_l." --require_upstream --count_files ".$bam." 2> /dev/null";
     print "$command_psite\n";
-    system($command_psite);
+    system($command_psite)  == 0 
+        or die ("Error running psite. Please ensure the Plastid tool is properly installed\n");
 
-    my $psite_off_output = $work_dir.$experiment."p_site_offsets.txt";
-    system("mv ".$run_name."_p_offsets.txt $psite_off_output");
-    system("mv ".$run_name."_p_offsets.png ".$plastid_image);
+    my $psite_off_output = $work_dir."/".$experiment."p_site_offsets.txt";
+    system("cp ".$run_name."_p_offsets.txt $psite_off_output");
+    system("cp ".$run_name."_p_offsets.png ".$plastid_image);
 
     return $psite_off_output;
 }
+
 
 sub check_if_pgm_exist {
 
