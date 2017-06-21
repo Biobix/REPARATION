@@ -17,9 +17,12 @@ The REPARATION workflow consist of:
 
 NB: The ribosome profiling data should be aligned onto the same genome used for the analyzed!
 
+REPARATION was developed and tested on a Linux system.
+
 # Requirements
-The REPARATION software is primarily written in perl, python2.7 and R. For each dataset the complete REPARATION workflow (from the sam files to final results) took under 45 minutes.
-It is also dependant on a set of tool binaries which should all be installed on your system before the pipeline can execute all of its commands.
+
+The REPARATION software is primarily written in perl, python2.7 and R. For each dataset the complete REPARATION workflow (from the sam files to final results) takes under 90 minutes.
+REAPARATION is dependant on a set of tool binaries which should all be installed on your system before the pipeline can execute all of its commands.
 
 	Perl packages:
 	--------------
@@ -54,7 +57,18 @@ It is also dependant on a set of tool binaries which should all be installed on 
 
 	
 # Install
-The tool does not rerquire any special installation outside the prerequisites. 
+
+REPARATION does not rerquire any special installation requirements. To install REPARATION, clone/download the github repository into a directory of your choice.
+
+Binaries:
+
+If prodigl/glimmer3 is not installed on your system then REPARATION will use the version avialable in the script directory. Under Linux you must ensure that you have read and execute permissions for the binary file. If needed, use the chmod command to set the execute bit, e.g.:
+
+chmod +x $PATH/REPARATION/scripts/bin/prodigal
+chmod +x $PATH/REPARATION/scripts/bin/glimmer/glimmer3
+chmod +x $PATH/REPARATION/scripts/bin/glimmer/build-icm
+
+
 
 # Galaxy Installation
 
@@ -78,7 +92,7 @@ Mandatory input variables
 	-db:    fasta database of curated bacteria protein sequences
 
 
-optional input variables
+Optional input variables
 
 	-gtf:   GTF genome annotation file
 	-wdir:  working directory (defualts to current directory)
@@ -106,18 +120,22 @@ optional input variables
 
 Output files
 
-_Ribo-seq_Sense_"psite".bedgraph      Sense bedgraph files for genome wide ribosome profile visualization (psite = 1, 3 or 5)
-_Ribo-seq_AntiSense_"psite".bedgraph  Antisense bedgraph files for genome wide ribosome profile visualization (psite = 1, 3 or 5)
-_Predicted_ORFs.txt                   List of translated open reading frames predicted by REPARATION
-_Predicted_ORFs.bed                   bed file of REPARATION predicted open reading frames
-_predicted_ORFs.fasta                 fasta file of predicted translated open reading frame
-_plastid_image.png                    Image showing plstid predicted P sites (optional)
+_Ribo-seq_Sense_"psite".bedgraph      	Sense bedgraph files for genome wide ribosome profile visualization (psite = 1, 3 or 5)
+_Ribo-seq_AntiSense_"psite".bedgraph  	Antisense bedgraph files for genome wide ribosome profile visualization (psite = 1, 3 or 5)
+_Predicted_ORFs.txt                   	List of translated open reading frames predicted by REPARATION
+_Predicted_ORFs.bed                   	bed file of REPARATION predicted open reading frames
+_predicted_ORFs.fasta                 	fasta file of predicted translated open reading frame
+_plastid_image.png			            Image showing plstid predicted P sites (optional)
+_PR_ROC_curve.pdf                       Precision-Recall and ROC curve plots
+_metagene_profile.pdf                   Metagene profiles around the start and stop of ORFs in positive set
+_Scurve.pdf                             Sigmoid curve with estimated thresholds
+_variable_importance.pdf                variable importance plot
 
 
 
 # Data
 
-The data sets used for the project can be downloaded from the project website xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+The data sets used for the project can be downloaded from http://www.biobix.be/reparation/data/
 
 
 
