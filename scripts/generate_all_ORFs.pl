@@ -245,11 +245,15 @@ sub find_all_ORFs {
 				for (my $i = $start; $i <= (length($sequenceEntry) - 3); $i = $i + 3) {
 					my $codon = uc(substr($sequenceEntry, $i, 3));
 					last if (length($codon) < 3);
+<<<<<<< HEAD
 					if (!(exists $translationHash{$codon})) {
                         $aa_seq = "";
                         $tr_seq = ""; 
                         last;
                     }
+=======
+					if (!(exists $translationHash{$codon})) {$aa_seq = ""; last}
+>>>>>>> origin/master
 
 					my $aa = $translationHash{$codon};
 					if ($aa eq "*") {
@@ -495,11 +499,19 @@ sub SD_kmer_score {
 	for(my $i=0; $i < scalar(@nucl); $i++) {
 		if ($scorei) {
 			if ($SD_markov_score->{$i}->{$nucl[$i]}) {
+<<<<<<< HEAD
                 $scorei = $scorei*$SD_markov_score->{$i}->{$nucl[$i]};
             }
 		} else {
 			$scorei = $SD_markov_score->{$i}->{$nucl[$i]};
         }
+=======
+                		$scorei = $scorei*$SD_markov_score->{$i}->{$nucl[$i]};
+            		}
+		} else {
+			$scorei = $SD_markov_score->{$i}->{$nucl[$i]};
+            	}
+>>>>>>> origin/master
 	}
 
 	return($Max_loc_score->{$pos} + $scorei);

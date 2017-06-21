@@ -15,10 +15,13 @@ The REPARATION workflow consist of:
 4) Start Site selection.
 
 
+<<<<<<< HEAD
 NB: The ribosome profiling data should be aligned onto the same genome used for the analyzed!
 
 REPARATION was developed and tested on a Linux system.
 
+=======
+>>>>>>> origin/master
 # Requirements
 
 The REPARATION software is primarily written in perl, python2.7 and R. For each dataset the complete REPARATION workflow (from the sam files to final results) takes under 90 minutes.
@@ -87,7 +90,7 @@ Usage: ./reparation.pl -sam riboseq_alignment_files_sam_format -g genome_fasta_f
 Mandatory input variables
 
 	-sam:   Ribosome alignment file (sam)
-	-g:     Genome fasta file
+	-g:     Genome fasta file. This should be the same genome fasta file used in the alignment of the Ribo-seq reads.
 	-sdir:  The "scripts" directory (avialable within the REPARATION directory), defaults to directory of reparation.pl script
 	-db:    fasta database of curated bacteria protein sequences
 
@@ -126,6 +129,7 @@ _Predicted_ORFs.txt                   	List of translated open reading frames pr
 _Predicted_ORFs.bed                   	bed file of REPARATION predicted open reading frames
 _predicted_ORFs.fasta                 	fasta file of predicted translated open reading frame
 _plastid_image.png			            Image showing plstid predicted P sites (optional)
+<<<<<<< HEAD
 _PR_ROC_curve.pdf                       Precision-Recall and ROC curve plots
 _metagene_profile.pdf                   Metagene profiles around the start and stop of ORFs in positive set
 _Scurve.pdf                             Sigmoid curve with estimated thresholds
@@ -136,6 +140,12 @@ _variable_importance.pdf                variable importance plot
 # Data
 
 The data sets used for the project can be downloaded from http://www.biobix.be/reparation/data/
+=======
+_PR_ROC_curve.pdf		       	        Plots for the Precision-Recall and ROC curve to evalaute model performance
+_metagene_profile.pdf		       	    Metagene profile around the start and stop of ORFs in the positive set
+_Scurve.pdf			       	            Plot of the Sigmoid curve showing the estimated minimum thresholds
+_variable_importance.pdf	       		    Varible importance (Gini) of the faetures used in the model
+>>>>>>> origin/master
 
 
 
