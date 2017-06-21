@@ -66,7 +66,9 @@ Binaries:
 If prodigl/glimmer3 is not installed on your system then REPARATION will use the version avialable in the script directory. Under Linux you must ensure that you have read and execute permissions for the binary file. If needed, use the chmod command to set the execute bit, e.g.:
 
 chmod +x $PATH/REPARATION/scripts/bin/prodigal
+
 chmod +x $PATH/REPARATION/scripts/bin/glimmer/glimmer3
+
 chmod +x $PATH/REPARATION/scripts/bin/glimmer/build-icm
 
 
