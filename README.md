@@ -27,7 +27,7 @@ REAPARATION is dependant on a set of tool binaries which should all be installed
 
 	Perl packages:
 	--------------
-		- Perl + v.5.10
+		- Perl + v.5.10+
 		- Getopt::Long
 		- Cwd	
 		- BioPerl
@@ -41,6 +41,7 @@ REAPARATION is dependant on a set of tool binaries which should all be installed
 	--------------
 		- ggplot2
 		- randomForest
+		- PRROC
 		- ROCR
 		- SiZer
 
