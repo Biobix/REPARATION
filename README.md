@@ -3,6 +3,8 @@ REPARATION (Ribosome Profiling Assisted (Re-)Annotation of Bacterial genomes) is
 
 The software was created at VIB-UGent Center for Medical Biotechnology and Lab of Bioinformatics and Computational Genomics (Biobix), University of Gent, belgium.
 
+Link to the paper https://doi.org/10.1093/nar/gkx758
+
 The REPARATION workflow consist of:
 
 1) Genome wide ribosome profiling profile based on choosen occupancy position.
