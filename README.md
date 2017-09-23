@@ -159,6 +159,6 @@ _variable_importance.pdf	       	Varible importance (Gini) of the faetures used 
 
 The data sets used for the project can be downloaded from http://www.biobix.be/reparation/data/
 
+# More information
 
-
-
+For more information about REPARATION contact: elvis.ndah@gmail.com or Gerben.Menschaert@UGent.be
