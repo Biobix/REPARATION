@@ -60,15 +60,37 @@ positive <- ORFs[which(as.vector(ORFs$orf_id) %in% as.vector(prodigal$orf_id)),]
 positive <- positive[which(as.vector(positive$start_codon) %in% valid_start),]
 positive$class <- "P"
 
-# S-CURVE Threshold Estimation
-model <- nls(coverage ~ SSfpl(log_rpkm, D, A, C, B), data=positive)
-x <- fitted(model)
-y <- predict(model)
-
+# S-CURVE Threshold Estimation (SiZer)
+#model <- nls(coverage ~ SSfpl(log_rpkm, D, A, C, B), data=positive)
+#x <- fitted(model)
+#y <- predict(model)
 # SiZer bent point prediction
-bent <- bent.cable(x, y, grid.size=100)
-MINRPKM <- round(bent$alpha, digits = 2)
-MINCOV <- round(predict(model, newdata = data.frame(log_rpkm = MINRPKM))[1], digits = 2)
+#bent <- bent.cable(x, y, grid.size=100)
+#MINRPKM <- round(bent$alpha, digits = 2)
+#MINCOV <- round(predict(model, newdata = data.frame(log_rpkm = MINRPKM))[1], digits = 2)
+
+
+# Threshold method 2
+S.Model <- nls(coverage_cds ~ SSfpl(log_rpkm, A, B, xmid, scal), data=positive)
+
+params <- coef(S.Model)
+A <- params[1]
+B <- params[2]
+xmid <- params[3]
+scal <- params[4]
+
+# Bend point formula 2 [4 parameter logistic regression]
+k <- 4.6804985798829056
+Y_bend_lower = ((A - B)/(1 + (1/k))) + B
+X_bend_lower = xmid*(((A - Y_bend_lower)/(Y_bend_lower - B))^(1/scal))
+
+Y_bend_higher = ((A - B)/(1 + k)) + B
+X_bend_higher = xmid*(((A - Y_bend_higher)/(Y_bend_higher - B))^(1/scal))
+
+MINRPKM <- round(X_bend_lower, digits=4)
+MINCOV <- predict(S.Model, newdata = data.frame(log_rpkm = X_bend_lower))[1]
+MINCOV <- round(MINCOV, digits=4)
+
 
 scurve <- paste(work_dir,"S_Curve.pdf",sep="")
 pdf(file=scurve, width=10, height=7)
@@ -188,6 +210,10 @@ prec.rf <- performance(pred.rf, "prec", "rec")
 plot(prec.rf, colorize=T, cex.lab=1.75, cex.axis=2, cex=2)
 
 invisible(dev.off()) 
+
+# save model to file
+model_to_file <- paste(work_dir,"RF_model.rds",sep="")
+save(rf_output, model_to_file)
 
 
 # PREDICTION
