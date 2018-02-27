@@ -43,7 +43,4 @@ abline(v=0,col="red")
 plot(stop$position,stop$Average_read, col="blue", lwd=2.5, type="l", main = paste("Stop Profile ",count), xlab="Distance from stop codon", ylab="Average RPF Reads",cex.lab=cex, cex.axis = cex, ylim=c(0,ymax))
 abline(v=0,col="red")
 invisible(dev.off()) 
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/master
