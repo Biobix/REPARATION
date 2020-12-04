@@ -26,8 +26,16 @@ import re
 
 """
 
-Generate Ribo-seq occupancy from sam alignment file 
+Generate Ribo-seq occupancy from sam alignment file
+output file format
 chromosome,start,strand,reads
+
+This script using the p-site assignments based on the work from https://doi.org/10.1186/s12864-016-3278-x and https://doi.org/10.1016/j.celrep.2015.03.014
+- occupancy = 1 (option -p = 1): the p-site assignment is based on the paper https://doi.org/10.1186/s12864-016-3278-x
+- occupancy = 3 or 5 (option -p = 3 or -p = 5): the p-site assignment is based on the 3 or 5 prime end of the ribo-seq read based on the paper https://doi.org/10.1016/j.celrep.2015.03.014
+
+The output file 
+
 
 """
 
